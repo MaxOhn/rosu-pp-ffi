@@ -1,0 +1,23 @@
+language = "C"
+style = "both"
+usize_is_size_t = true
+line_length = 100
+tab_width = 4
+documentation = true
+documentation_length = "full"
+
+[export]
+prefix = "rosu_pp_"
+
+[struct]
+
+[enum]
+enum_class = true
+prefix_with_name = true
+
+[fn]
+
+[parse]
+parse_deps = false
+clean = false
+expand = []
