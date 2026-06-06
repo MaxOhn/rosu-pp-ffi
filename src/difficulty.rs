@@ -20,7 +20,6 @@ use crate::{beatmap::BeatmapHandle, error::FfiResult, mods::ModsHandle};
 /// pointer remains valid and can be used for subsequent setter calls.
 ///
 /// **Must be freed** with `rosu_pp_difficulty_free` when done.
-#[repr(C)]
 pub struct DifficultyHandle {
     pub(crate) difficulty: Difficulty,
 }

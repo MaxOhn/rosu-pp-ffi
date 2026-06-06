@@ -45,9 +45,7 @@ typedef enum rosu_pp_GameMode {
  * Created via `rosu_pp_beatmap_from_path` or `rosu_pp_beatmap_from_bytes`.
  * Must be freed with `rosu_pp_beatmap_free` when no longer needed.
  */
-typedef struct rosu_pp_BeatmapHandle {
-    rosu_pp_Beatmap beatmap;
-} rosu_pp_BeatmapHandle;
+typedef struct rosu_pp_BeatmapHandle rosu_pp_BeatmapHandle;
 
 /**
  * Opaque handle to a difficulty calculator builder.
@@ -61,9 +59,17 @@ typedef struct rosu_pp_BeatmapHandle {
  *
  * **Must be freed** with `rosu_pp_difficulty_free` when done.
  */
-typedef struct rosu_pp_DifficultyHandle {
-    rosu_pp_Difficulty difficulty;
-} rosu_pp_DifficultyHandle;
+typedef struct rosu_pp_DifficultyHandle rosu_pp_DifficultyHandle;
+
+/**
+ * Opaque handle to a gradual performance calculator.
+ *
+ * Created via `rosu_pp_gradual_performance_new`. Iterate through hit objects
+ * using `rosu_pp_gradual_performance_next` until it returns `FfiResult::Done`.
+ *
+ * **Must be freed** with `rosu_pp_gradual_performance_free` when done.
+ */
+typedef struct rosu_pp_GradualPerformanceHandle rosu_pp_GradualPerformanceHandle;
 
 /**
  * Opaque handle to a game mods collection.
@@ -71,9 +77,21 @@ typedef struct rosu_pp_DifficultyHandle {
  * Created via `rosu_pp_mods_parse`, `rosu_pp_mods_parse_with_mode`, or
  * `rosu_pp_mods_from_bits`. Must be freed with `rosu_pp_mods_free`.
  */
-typedef struct rosu_pp_ModsHandle {
-    rosu_pp_GameMods mods;
-} rosu_pp_ModsHandle;
+typedef struct rosu_pp_ModsHandle rosu_pp_ModsHandle;
+
+/**
+ * Opaque handle to a performance calculator builder.
+ *
+ * Created via `rosu_pp_performance_new`. Configure it with setter functions,
+ * then calculate with `rosu_pp_performance_calculate`.
+ *
+ * **Builder pattern:** Each setter consumes the handle internally (using
+ * `Box::from_raw` + `mem::forget`) and returns `FfiResult::Ok`. The handle
+ * pointer remains valid and can be used for subsequent setter calls.
+ *
+ * **Must be freed** with `rosu_pp_performance_free` when done.
+ */
+typedef struct rosu_pp_PerformanceHandle rosu_pp_PerformanceHandle;
 
 /**
  * Unified difficulty attributes for all osu! game modes.
@@ -261,18 +279,6 @@ typedef struct rosu_pp_DifficultyAttributes {
 } rosu_pp_DifficultyAttributes;
 
 /**
- * Opaque handle to a gradual performance calculator.
- *
- * Created via `rosu_pp_gradual_performance_new`. Iterate through hit objects
- * using `rosu_pp_gradual_performance_next` until it returns `FfiResult::Done`.
- *
- * **Must be freed** with `rosu_pp_gradual_performance_free` when done.
- */
-typedef struct rosu_pp_GradualPerformanceHandle {
-    rosu_pp_RosuGradualPerformance gradual;
-} rosu_pp_GradualPerformanceHandle;
-
-/**
  * Hit result counts and score composition for a single play.
  *
  * Initialize with `rosu_pp_score_state_new` and fill in the fields
@@ -409,22 +415,6 @@ typedef struct rosu_pp_PerformanceAttributes {
      */
     struct rosu_pp_DifficultyAttributes difficulty;
 } rosu_pp_PerformanceAttributes;
-
-/**
- * Opaque handle to a performance calculator builder.
- *
- * Created via `rosu_pp_performance_new`. Configure it with setter functions,
- * then calculate with `rosu_pp_performance_calculate`.
- *
- * **Builder pattern:** Each setter consumes the handle internally (using
- * `Box::from_raw` + `mem::forget`) and returns `FfiResult::Ok`. The handle
- * pointer remains valid and can be used for subsequent setter calls.
- *
- * **Must be freed** with `rosu_pp_performance_free` when done.
- */
-typedef struct rosu_pp_PerformanceHandle {
-    rosu_pp_Performance performance;
-} rosu_pp_PerformanceHandle;
 
 /**
  * Load a beatmap from a file path.

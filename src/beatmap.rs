@@ -11,7 +11,6 @@ use rosu_pp::{model::mode::GameMode, Beatmap};
 ///
 /// Created via `rosu_pp_beatmap_from_path` or `rosu_pp_beatmap_from_bytes`.
 /// Must be freed with `rosu_pp_beatmap_free` when no longer needed.
-#[repr(C)]
 pub struct BeatmapHandle {
     pub(crate) beatmap: Beatmap,
 }

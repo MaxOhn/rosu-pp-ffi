@@ -15,7 +15,6 @@ use crate::{error::FfiResult, mode::GameMode};
 ///
 /// Created via `rosu_pp_mods_parse`, `rosu_pp_mods_parse_with_mode`, or
 /// `rosu_pp_mods_from_bits`. Must be freed with `rosu_pp_mods_free`.
-#[repr(C)]
 pub struct ModsHandle {
     pub(crate) mods: GameMods,
 }

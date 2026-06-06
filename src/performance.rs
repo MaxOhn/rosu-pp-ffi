@@ -22,7 +22,6 @@ use crate::{
 /// pointer remains valid and can be used for subsequent setter calls.
 ///
 /// **Must be freed** with `rosu_pp_performance_free` when done.
-#[repr(C)]
 pub struct PerformanceHandle<'map> {
     performance: Performance<'map>,
 }

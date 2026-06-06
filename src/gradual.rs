@@ -18,7 +18,6 @@ use crate::{
 /// using `rosu_pp_gradual_performance_next` until it returns `FfiResult::Done`.
 ///
 /// **Must be freed** with `rosu_pp_gradual_performance_free` when done.
-#[repr(C)]
 pub struct GradualPerformanceHandle {
     gradual: RosuGradualPerformance,
 }
