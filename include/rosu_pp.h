@@ -626,18 +626,20 @@ enum rosu_pp_FfiResult rosu_pp_mode_from_str(const char *s, enum rosu_pp_GameMod
 /**
  * Parse a mod string with an explicit game mode.
  *
- * Parses mod acronyms (e.g., `"HDHR"`, `"DT", "FLHR"`) and returns a handle
- * to the resulting mods collection specific to the given game mode.
+ * Parses mods (e.g., `"HDHR"`, `"{acronym: "HDFL","settings":{}}"`) and
+ * returns a handle to the resulting mods collection specific to the given
+ * game mode.
  *
  * **Parameters:**
  * - `s`: Null-terminated C string containing the mod acronyms.
- * - `deny_unknown_fields`: If `true`, parsing fails when unknown mod acronyms
- *   are encountered. If `false`, unknown mods are silently ignored.
+ * - `deny_unknown_fields`: If `true`, parsing fails when unknown mod settings
+ *   are encountered. If `false`, unknown settings are silently ignored.
  * - `mode`: The game mode to parse mods for (osu!, taiko, catch, or mania).
  * - `out`: Pointer to store the resulting `ModsHandle`.
  *
  * **Returns:** `FfiResult::Ok` on success, or `FfiResult::ParseError` if the
- * string could not be parsed, or `FfiResult::NullPointer` if `s` or `out` is null.
+ * string could not be parsed, or `FfiResult::NullPointer` if `s` or `out` is
+ * null.
  *
  * **Memory:** The caller owns the handle written to `out` and must free it with
  * `rosu_pp_mods_free`.
@@ -650,14 +652,13 @@ enum rosu_pp_FfiResult rosu_pp_mods_parse_with_mode(const char *s,
 /**
  * Parse a mod string with automatic mode detection.
  *
- * Parses mod acronyms and infers the game mode from the mod combinations.
- * For example, `"FL"` (Flashlight) implies osu! mode since Flashlight is
- * osu!-specific.
+ * Parses mods and infers the game mode from the mod combinations.
+ * For example, `"FI"` (FadeIn) implies mania mode since it is mania-specific.
  *
  * **Parameters:**
  * - `s`: Null-terminated C string containing the mod acronyms.
- * - `deny_unknown_fields`: If `true`, parsing fails when unknown mod acronyms
- *   are encountered. If `false`, unknown mods are silently ignored.
+ * - `deny_unknown_fields`: If `true`, parsing fails when unknown mod settings
+ *   are encountered. If `false`, unknown settings are silently ignored.
  * - `out`: Pointer to store the resulting `ModsHandle`.
  *
  * **Returns:** `FfiResult::Ok` on success, or `FfiResult::ParseError` if the
@@ -715,7 +716,8 @@ char *rosu_pp_mods_to_string(const struct rosu_pp_ModsHandle *mods);
  * Free a string returned by `rosu_pp_mods_to_string`.
  *
  * **Parameters:**
- * - `s`: A string returned by `rosu_pp_mods_to_string`. May be null (null is a no-op).
+ * - `s`: A string returned by `rosu_pp_mods_to_string`. May be null (null is
+ *   a no-op).
  *
  * **Note:** This is the ONLY correct way to free strings from `mods_to_string`.
  * Do NOT use standard C `free()` on this pointer.
