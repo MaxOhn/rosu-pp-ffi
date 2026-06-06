@@ -1,3 +1,8 @@
+//! Performance calculator handle and configuration.
+//!
+//! Provides a builder-style interface for configuring and running performance
+//! (pp) calculations for osu! replays and scores.
+
 use std::{mem, ptr};
 
 use rosu_pp::Performance;
@@ -7,11 +12,31 @@ use crate::{
     score_state::ScoreState,
 };
 
+/// Opaque handle to a performance calculator builder.
+///
+/// Created via `rosu_pp_performance_new`. Configure it with setter functions,
+/// then calculate with `rosu_pp_performance_calculate`.
+///
+/// **Builder pattern:** Each setter consumes the handle internally (using
+/// `Box::from_raw` + `mem::forget`) and returns `FfiResult::Ok`. The handle
+/// pointer remains valid and can be used for subsequent setter calls.
+///
+/// **Must be freed** with `rosu_pp_performance_free` when done.
 #[repr(C)]
 pub struct PerformanceHandle<'map> {
     performance: Performance<'map>,
 }
 
+/// Create a new performance calculator for the given beatmap.
+///
+/// **Parameters:**
+/// - `map`: A valid `BeatmapHandle` pointer (must not be null).
+///
+/// **Returns:** A non-null handle on success, or `NULL` if `map` is null.
+///
+/// **Memory:** The caller owns the returned handle and must free it with
+/// `rosu_pp_performance_free`. The `map` handle must remain valid for the
+/// lifetime of this `PerformanceHandle` (since it borrows the beatmap data).
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_new(
     map: *const BeatmapHandle,
@@ -27,6 +52,16 @@ pub extern "C" fn rosu_pp_performance_new(
     }))
 }
 
+/// Set the game mods for the performance calculation.
+///
+/// **Parameters:**
+/// - `handle`: A valid `PerformanceHandle` pointer (must not be null).
+/// - `mods`: A `ModsHandle` pointer containing the mods to apply.
+///
+/// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+/// `handle` is null.
+///
+/// **Handle reuse:** The `handle` remains valid after this call.
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_mods(
     handle: *mut PerformanceHandle<'static>,
@@ -46,6 +81,17 @@ pub extern "C" fn rosu_pp_performance_mods(
 
 macro_rules! setter {
     ( $fn:ident ( $arg:ident: $ty:ty $(, $args:ident: $tys:ty ),* ) ) => {
+        /// Configuration setter for the performance calculator.
+        ///
+        /// **Parameters:**
+        /// - `handle`: A valid `PerformanceHandle` pointer (must not be null).
+        /// - `$arg`: The primary parameter value.
+        /// $(, `$args`): Additional parameter values.
+        ///
+        /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+        /// if `handle` is null.
+        ///
+        /// **Handle reuse:** The `handle` remains valid after this call.
         #[no_mangle]
         pub extern "C" fn $fn(
             handle: *mut PerformanceHandle,
@@ -66,26 +112,56 @@ macro_rules! setter {
 }
 
 setter!(rosu_pp_performance_passed_objects(passed_objects: u32));
+
 setter!(rosu_pp_performance_clock_rate(clock_rate: f64));
+
 setter!(rosu_pp_performance_ar(ar: f32, fixed: bool));
+
 setter!(rosu_pp_performance_cs(cs: f32, fixed: bool));
+
 setter!(rosu_pp_performance_hp(hp: f32, fixed: bool));
+
 setter!(rosu_pp_performance_od(od: f32, fixed: bool));
+
 setter!(rosu_pp_performance_hardrock_offsets(hardrock_offsets: bool));
+
 setter!(rosu_pp_performance_lazer(lazer: bool));
+
 setter!(rosu_pp_performance_accuracy(accuracy: f64));
+
 setter!(rosu_pp_performance_misses(misses: u32));
+
 setter!(rosu_pp_performance_combo(combo: u32));
+
 setter!(rosu_pp_performance_large_tick_hits(large_tick_hits: u32));
+
 setter!(rosu_pp_performance_small_tick_hits(small_tick_hits: u32));
+
 setter!(rosu_pp_performance_slider_end_hits(slider_end_hits: u32));
+
 setter!(rosu_pp_performance_n300(n300: u32));
+
 setter!(rosu_pp_performance_n100(n100: u32));
+
 setter!(rosu_pp_performance_n50(n50: u32));
+
 setter!(rosu_pp_performance_n_geki(n_geki: u32));
+
 setter!(rosu_pp_performance_n_katu(n_katu: u32));
+
 setter!(rosu_pp_performance_legacy_total_score(legacy_total_score: u32));
 
+/// Set the full score state at once.
+///
+/// This is an alternative to setting individual hit counts (n300, n100, etc.)
+/// and combo. Use this when you have a complete `ScoreState` struct.
+///
+/// **Parameters:**
+/// - `handle`: A valid `PerformanceHandle` pointer.
+/// - `state`: A reference to a `ScoreState` struct with the score data.
+///
+/// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+/// `handle` is null.
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_state(
     handle: *mut PerformanceHandle<'static>,
@@ -102,6 +178,19 @@ pub extern "C" fn rosu_pp_performance_state(
     FfiResult::Ok
 }
 
+/// Calculate performance attributes for the configured settings.
+///
+/// **Parameters:**
+/// - `handle`: A valid `PerformanceHandle` pointer. **Consumed** by this call.
+///   The handle must NOT be used or freed after this call.
+/// - `out`: Pointer to a `PerformanceAttributes` struct where results will be
+///   written (must not be null).
+///
+/// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+/// `handle` or `out` is null.
+///
+/// **Ownership:** This function **consumes** the `handle`. The caller must NOT
+/// call `rosu_pp_performance_free` on the handle, nor use it after this call.
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_calculate(
     handle: *mut PerformanceHandle<'static>,
@@ -118,6 +207,14 @@ pub extern "C" fn rosu_pp_performance_calculate(
     FfiResult::Ok
 }
 
+/// Free a performance calculator handle.
+///
+/// **Parameters:**
+/// - `handle`: A handle returned by `rosu_pp_performance_new`. May be null
+///   (null is a no-op).
+///
+/// **Note:** Do NOT call this function if the handle was passed to
+/// `rosu_pp_performance_calculate` — that function consumes the handle.
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_free(handle: *mut PerformanceHandle<'static>) {
     if !handle.is_null() {

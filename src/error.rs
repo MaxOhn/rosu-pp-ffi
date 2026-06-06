@@ -1,5 +1,19 @@
+//! FFI return code enum for error handling.
+//!
+//! All fallible FFI functions return `FfiResult`. Check the return value
+//! before using output parameters or handles.
+
 use std::fmt;
 
+/// Return code for FFI functions that can fail.
+///
+/// Variants:
+/// - `Ok` — Operation succeeded.
+/// - `Done` — Gradual calculator has processed all objects (only returned by
+///   `rosu_pp_gradual_performance_next`).
+/// - `ParseError` — Input string could not be parsed (beatmap parsing, mod parsing).
+/// - `NullPointer` — A null pointer was passed where a valid handle was expected.
+/// - `InvalidArgument` — An argument value was out of range or otherwise invalid.
 #[repr(C)]
 pub enum FfiResult {
     Ok = 0,

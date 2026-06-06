@@ -1,19 +1,51 @@
+//! Score state struct for performance calculations.
+//!
+//! Represents the hit results and score composition for a single play, used
+//! in performance and gradual performance calculations.
+
 use rosu_pp::any::ScoreState as RosuScoreState;
 
+/// Hit result counts and score composition for a single play.
+///
+/// Initialize with `rosu_pp_score_state_new` and fill in the fields
+/// corresponding to the game mode and hit results achieved.
+///
+/// **osu! fields:** `max_combo`, `osu_large_tick_hits`, `osu_small_tick_hits`,
+/// `slider_end_hits`, `n300`, `n100`, `n50`, `misses`, `legacy_total_score`,
+/// `legacy_total_score_valid`
+///
+/// **Taiko fields:** `max_combo`, `n300`, `n100`, `n50`, `misses`
+///
+/// **Catch fields:** `max_combo`, `n300`, `n100`, `n50`, `n_katu`, `misses`
+///
+/// **Mania fields:** `max_combo`, `n_geki`, `n_katu`, `n300`, `n100`, `n50`,
+/// `misses`, `legacy_total_score`, `legacy_total_score_valid`
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ScoreState {
+    /// Maximum combo achieved in the play
     pub max_combo: u32,
+    /// Number of large tick (whistle) hits on sliders (osu! only)
     pub osu_large_tick_hits: u32,
+    /// Number of small tick (clap) hits on sliders (osu! only)
     pub osu_small_tick_hits: u32,
+    /// Number of slider end hits (osu! only)
     pub slider_end_hits: u32,
+    /// Number of geki (320) hits (mania only)
     pub n_geki: u32,
+    /// Number of katu (200) hits / tiny droplet misses (mania / catch)
     pub n_katu: u32,
+    /// Number of 300-score hit results
     pub n300: u32,
+    /// Number of 100-score hit results
     pub n100: u32,
+    /// Number of 50-score hit results
     pub n50: u32,
+    /// Number of misses
     pub misses: u32,
+    /// Legacy total score value (osu! only)
     pub legacy_total_score: u32,
+    /// Whether `legacy_total_score` is valid (osu! only)
     pub legacy_total_score_valid: bool,
 }
 
@@ -54,6 +86,12 @@ impl From<&ScoreState> for RosuScoreState {
     }
 }
 
+/// Create a new zero-initialized ScoreState.
+///
+/// **Returns:** A `ScoreState` struct with all fields set to zero/false.
+///
+/// Initialize the returned struct with the appropriate hit result counts
+/// for the play being evaluated.
 #[no_mangle]
 pub extern "C" fn rosu_pp_score_state_new() -> ScoreState {
     ScoreState {
