@@ -150,6 +150,77 @@ setter!(rosu_pp_performance_n_katu(n_katu: u32));
 
 setter!(rosu_pp_performance_legacy_total_score(legacy_total_score: u32));
 
+/// Set the priority of hitresults when generating remaining hitresults.
+///
+/// **Parameters:**
+/// - `handle`: A valid `PerformanceHandle` pointer (must not be null).
+/// - `priority`: The hitresult priority: `0` for BestCase (prioritize good hitresults),
+///   `1` for WorstCase (prioritize bad hitresults).
+///
+/// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+/// `handle` is null.
+///
+/// **Handle reuse:** The `handle` remains valid after this call.
+#[no_mangle]
+pub extern "C" fn rosu_pp_performance_hitresult_priority(
+    handle: *mut PerformanceHandle<'static>,
+    priority: u32,
+) -> FfiResult {
+    if handle.is_null() {
+        return FfiResult::NullPointer;
+    }
+
+    let mut h = unsafe { Box::from_raw(handle) };
+    let priority = match priority {
+        0 => rosu_pp::any::HitResultPriority::BestCase,
+        1 => rosu_pp::any::HitResultPriority::WorstCase,
+        _ => return FfiResult::InvalidArgument,
+    };
+    h.performance = h.performance.hitresult_priority(priority);
+    mem::forget(h);
+
+    FfiResult::Ok
+}
+
+/// Calculate performance attributes for the configured settings after verifying
+/// the map is not too suspicious.
+///
+/// Same as `rosu_pp_performance_calculate` but checks the map for suspicious
+/// hit objects first. If the map is too suspicious, returns `FfiResult::TooSuspicious`.
+///
+/// **Parameters:**
+/// - `handle`: A valid `PerformanceHandle` pointer. **Consumed** by this call.
+///   The handle must NOT be used or freed after this call.
+/// - `out`: Pointer to a `PerformanceAttributes` struct where results will be
+///   written (must not be null).
+///
+/// **Returns:**
+/// - `FfiResult::Ok` — Calculation succeeded.
+/// - `FfiResult::TooSuspicious` — The map contains suspicious hit objects.
+/// - `FfiResult::NullPointer` — `handle` or `out` is null.
+///
+/// **Ownership:** This function **consumes** the `handle`. The caller must NOT
+/// call `rosu_pp_performance_free` on the handle, nor use it after this call.
+#[no_mangle]
+pub extern "C" fn rosu_pp_performance_checked_calculate(
+    handle: *mut PerformanceHandle<'static>,
+    out: *mut PerformanceAttributes,
+) -> FfiResult {
+    if handle.is_null() || out.is_null() {
+        return FfiResult::NullPointer;
+    }
+
+    let h = unsafe { Box::from_raw(handle) };
+
+    match h.performance.checked_calculate() {
+        Ok(attrs) => {
+            unsafe { *out = (&attrs).into() };
+            FfiResult::Ok
+        }
+        Err(_) => FfiResult::TooSuspicious,
+    }
+}
+
 /// Set the full score state at once.
 ///
 /// This is an alternative to setting individual hit counts (n300, n100, etc.)

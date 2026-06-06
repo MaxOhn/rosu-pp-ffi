@@ -7,6 +7,8 @@ use std::{ffi, ptr, slice};
 
 use rosu_pp::{model::mode::GameMode, Beatmap};
 
+use crate::error::FfiResult;
+
 /// Opaque handle to a loaded osu! beatmap.
 ///
 /// Created via `rosu_pp_beatmap_from_path` or `rosu_pp_beatmap_from_bytes`.
@@ -124,6 +126,37 @@ getter!(rosu_pp_beatmap_is_convert(is_convert) -> bool);
 getter!(rosu_pp_beatmap_hit_object_count(|map: &Beatmap| map.hit_objects.len()) -> usize);
 getter!(rosu_pp_beatmap_total_break_time(|map: &Beatmap| map.total_break_time()) -> f64);
 getter!(rosu_pp_beatmap_bpm(|map: &Beatmap| map.bpm()) -> f64);
+getter!(rosu_pp_beatmap_timing_point_count(|map: &Beatmap| map.timing_points.len()) -> usize);
+getter!(rosu_pp_beatmap_difficulty_point_count(|map: &Beatmap| map.difficulty_points.len()) -> usize);
+getter!(rosu_pp_beatmap_effect_point_count(|map: &Beatmap| map.effect_points.len()) -> usize);
+getter!(rosu_pp_beatmap_break_count(|map: &Beatmap| map.breaks.len()) -> usize);
+getter!(rosu_pp_beatmap_hit_sound_count(|map: &Beatmap| map.hit_sounds.len()) -> usize);
+
+/// Check whether the beatmap contains suspicious hit objects.
+///
+/// Some beatmaps contain hit objects that appear too suspicious for further
+/// calculation (e.g., maps designed to test the limits of osu!). This function
+/// checks for such cases.
+///
+/// **Parameters:**
+/// - `handle`: A valid `BeatmapHandle` pointer (must not be null).
+///
+/// **Returns:** `FfiResult::Ok` if the map is safe to use, or
+/// `FfiResult::TooSuspicious` if the map contains suspicious objects.
+/// Returns `FfiResult::NullPointer` if `handle` is null.
+#[no_mangle]
+pub extern "C" fn rosu_pp_beatmap_check_suspicion(handle: *const BeatmapHandle) -> FfiResult {
+    if handle.is_null() {
+        return FfiResult::NullPointer;
+    }
+
+    let map = unsafe { &(*handle).beatmap };
+
+    match map.check_suspicion() {
+        Ok(()) => FfiResult::Ok,
+        Err(_) => FfiResult::TooSuspicious,
+    }
+}
 
 /// Free a beatmap handle and release its memory.
 ///

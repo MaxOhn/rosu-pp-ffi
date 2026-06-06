@@ -4,6 +4,7 @@
 //! in performance and gradual performance calculations.
 
 use rosu_pp::any::ScoreState as RosuScoreState;
+use rosu_map::section::general::GameMode as RosuMapGameMode;
 
 /// Hit result counts and score composition for a single play.
 ///
@@ -108,4 +109,43 @@ pub extern "C" fn rosu_pp_score_state_new() -> ScoreState {
         legacy_total_score: 0,
         legacy_total_score_valid: false,
     }
+}
+
+/// Calculate the total number of hits from a score state for a given game mode.
+///
+/// Adds up n300, n100, n50 (if not taiko), n_katu (if not osu/taiko),
+/// and n_geki (if not osu/taiko/catch) to get the total hit count.
+///
+/// **Parameters:**
+/// - `state`: A reference to a `ScoreState` struct.
+/// - `mode`: The game mode (0=osu!, 1=taiko, 2=catch, 3=mania).
+///
+/// **Returns:** The total number of hits, or 0 if `state` is null.
+#[no_mangle]
+pub extern "C" fn rosu_pp_score_state_total_hits(state: *const ScoreState, mode: i32) -> u32 {
+    if state.is_null() {
+        return 0;
+    }
+
+    let s = unsafe { &*state };
+    let mode = match mode {
+        0 => RosuMapGameMode::Osu,
+        1 => RosuMapGameMode::Taiko,
+        2 => RosuMapGameMode::Catch,
+        3 => RosuMapGameMode::Mania,
+        _ => return 0,
+    };
+
+    let mut amount = s.n300 + s.n100 + s.misses;
+
+    if mode != RosuMapGameMode::Taiko {
+        amount += s.n50;
+
+        if mode != RosuMapGameMode::Osu {
+            amount += s.n_katu;
+            amount += u32::from(mode != RosuMapGameMode::Catch) * s.n_geki;
+        }
+    }
+
+    amount
 }

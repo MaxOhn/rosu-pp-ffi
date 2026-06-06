@@ -10,10 +10,12 @@
  * Variants:
  * - `Ok` — Operation succeeded.
  * - `Done` — Gradual calculator has processed all objects (only returned by
- *   `rosu_pp_gradual_performance_next`).
+ *   `rosu_pp_gradual_performance_next` and `rosu_pp_gradual_difficulty_next`).
  * - `ParseError` — Input string could not be parsed (beatmap parsing, mod parsing).
  * - `NullPointer` — A null pointer was passed where a valid handle was expected.
  * - `InvalidArgument` — An argument value was out of range or otherwise invalid.
+ * - `TooSuspicious` — The beatmap contains suspicious hit objects that make
+ *   calculation unreliable (only returned by `checked_*` functions).
  */
 typedef enum rosu_pp_FfiResult {
     rosu_pp_FfiResult_Ok = 0,
@@ -21,6 +23,7 @@ typedef enum rosu_pp_FfiResult {
     rosu_pp_FfiResult_ParseError = 2,
     rosu_pp_FfiResult_NullPointer = 3,
     rosu_pp_FfiResult_InvalidArgument = 4,
+    rosu_pp_FfiResult_TooSuspicious = 5,
 } rosu_pp_FfiResult;
 
 /**
@@ -62,6 +65,16 @@ typedef struct rosu_pp_BeatmapHandle rosu_pp_BeatmapHandle;
 typedef struct rosu_pp_DifficultyHandle rosu_pp_DifficultyHandle;
 
 /**
+ * Opaque handle to a gradual difficulty calculator.
+ *
+ * Created via `rosu_pp_gradual_difficulty_new`. Iterate through hit objects
+ * using `rosu_pp_gradual_difficulty_next` until it returns `FfiResult::Done`.
+ *
+ * **Must be freed** with `rosu_pp_gradual_difficulty_free` when done.
+ */
+typedef struct rosu_pp_GradualDifficultyHandle rosu_pp_GradualDifficultyHandle;
+
+/**
  * Opaque handle to a gradual performance calculator.
  *
  * Created via `rosu_pp_gradual_performance_new`. Iterate through hit objects
@@ -70,6 +83,14 @@ typedef struct rosu_pp_DifficultyHandle rosu_pp_DifficultyHandle;
  * **Must be freed** with `rosu_pp_gradual_performance_free` when done.
  */
 typedef struct rosu_pp_GradualPerformanceHandle rosu_pp_GradualPerformanceHandle;
+
+/**
+ * Opaque handle to an inspected difficulty calculator.
+ *
+ * Created via `rosu_pp_difficulty_inspect`. Use getter functions to inspect
+ * the configured values.
+ */
+typedef struct rosu_pp_InspectDifficultyHandle rosu_pp_InspectDifficultyHandle;
 
 /**
  * Opaque handle to a game mods collection.
@@ -92,6 +113,14 @@ typedef struct rosu_pp_ModsHandle rosu_pp_ModsHandle;
  * **Must be freed** with `rosu_pp_performance_free` when done.
  */
 typedef struct rosu_pp_PerformanceHandle rosu_pp_PerformanceHandle;
+
+/**
+ * Opaque handle to strain data.
+ *
+ * Created via `rosu_pp_difficulty_strains` (in difficulty.rs). The handle owns
+ * the strain arrays and must be freed with `rosu_pp_strains_free`.
+ */
+typedef struct rosu_pp_StrainsHandle rosu_pp_StrainsHandle;
 
 /**
  * Unified difficulty attributes for all osu! game modes.
@@ -417,6 +446,77 @@ typedef struct rosu_pp_PerformanceAttributes {
 } rosu_pp_PerformanceAttributes;
 
 /**
+ * The result of calculating the strains on a map.
+ *
+ * Suitable to plot the difficulty of a map over time. The `mode` field
+ * indicates which game mode the strains belong to, and the corresponding
+ * strain arrays will be populated.
+ *
+ * **osu! (mode=0):** `aim`, `aim_no_sliders`, `speed`, `flashlight`
+ * **taiko (mode=1):** `color`, `reading`, `rhythm`, `stamina`, `single_color_stamina`
+ * **catch (mode=2):** `movement`
+ * **mania (mode=3):** `strains`
+ */
+typedef struct rosu_pp_StrainsData {
+    /**
+     * Game mode: 0=osu!, 1=taiko, 2=catch, 3=mania
+     */
+    int32_t mode;
+    /**
+     * Time between two strain values in milliseconds (valid for all modes)
+     */
+    double section_len;
+    /**
+     * Number of strain values in each array
+     */
+    size_t len;
+    /**
+     * Aim strain peaks (osu! only)
+     */
+    const double *aim;
+    /**
+     * Aim strain peaks without sliders (osu! only)
+     */
+    const double *aim_no_sliders;
+    /**
+     * Speed strain peaks (osu! only)
+     */
+    const double *speed;
+    /**
+     * Flashlight strain peaks (osu! only)
+     */
+    const double *flashlight;
+    /**
+     * Stamina strain peaks (taiko only)
+     */
+    const double *stamina;
+    /**
+     * Rhythm strain peaks (taiko only)
+     */
+    const double *rhythm;
+    /**
+     * Color strain peaks (taiko only)
+     */
+    const double *color;
+    /**
+     * Reading strain peaks (taiko only)
+     */
+    const double *reading;
+    /**
+     * Single color stamina strain peaks (taiko only)
+     */
+    const double *single_color_stamina;
+    /**
+     * Movement strain peaks (catch only)
+     */
+    const double *movement;
+    /**
+     * Strain peaks (mania only)
+     */
+    const double *strains;
+} rosu_pp_StrainsData;
+
+/**
  * Load a beatmap from a file path.
  *
  * **Parameters:**
@@ -448,6 +548,22 @@ struct rosu_pp_BeatmapHandle *rosu_pp_beatmap_from_path(const char *path);
  * and may be freed immediately after.
  */
 struct rosu_pp_BeatmapHandle *rosu_pp_beatmap_from_bytes(const uint8_t *bytes, size_t len);
+
+/**
+ * Check whether the beatmap contains suspicious hit objects.
+ *
+ * Some beatmaps contain hit objects that appear too suspicious for further
+ * calculation (e.g., maps designed to test the limits of osu!). This function
+ * checks for such cases.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapHandle` pointer (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` if the map is safe to use, or
+ * `FfiResult::TooSuspicious` if the map contains suspicious objects.
+ * Returns `FfiResult::NullPointer` if `handle` is null.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_check_suspicion(const struct rosu_pp_BeatmapHandle *handle);
 
 /**
  * Free a beatmap handle and release its memory.
@@ -523,6 +639,214 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_calculate(struct rosu_pp_DifficultyHan
                                                     struct rosu_pp_DifficultyAttributes *out);
 
 /**
+ * Calculate difficulty attributes for the configured settings after verifying
+ * the map is not too suspicious.
+ *
+ * Same as `rosu_pp_difficulty_calculate` but checks the map for suspicious
+ * hit objects first. If the map is too suspicious, returns `FfiResult::TooSuspicious`.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `DifficultyHandle` pointer. **Consumed** by this call.
+ *   The handle must NOT be used or freed after this call.
+ * - `map`: A valid `BeatmapHandle` pointer (must not be null).
+ * - `out`: Pointer to a `DifficultyAttributes` struct where results will be written.
+ *   (must not be null).
+ *
+ * **Returns:**
+ * - `FfiResult::Ok` — Calculation succeeded.
+ * - `FfiResult::TooSuspicious` — The map contains suspicious hit objects.
+ * - `FfiResult::NullPointer` — `handle`, `map`, or `out` is null.
+ *
+ * **Ownership:** This function **consumes** the `handle`. The caller must NOT
+ * call `rosu_pp_difficulty_free` on the handle, nor use it after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_difficulty_checked_calculate(struct rosu_pp_DifficultyHandle *handle,
+                                                            const struct rosu_pp_BeatmapHandle *map,
+                                                            struct rosu_pp_DifficultyAttributes *out);
+
+/**
+ * Perform the difficulty calculation but instead of evaluating the skill
+ * strains, return them as is. Suitable for plotting the difficulty of a map
+ * over time.
+ *
+ * **Parameters:**
+ * - `handle`: A `DifficultyHandle` pointer. **Consumed** by this call.
+ *   The handle must NOT be used or freed after this call.
+ * - `map`: A valid `BeatmapHandle` pointer (must not be null).
+ *
+ * **Returns:** A non-null `StrainsHandle` on success, or `NULL` if either
+ * pointer is null.
+ *
+ * **Ownership:** This function **consumes** the `difficulty` handle. The caller
+ * must NOT call `rosu_pp_difficulty_free` on the handle, nor use it after this call.
+ *
+ * **Memory:** The caller owns the returned handle and must free it with
+ * `rosu_pp_strains_free`.
+ */
+struct rosu_pp_StrainsHandle *rosu_pp_difficulty_strains(struct rosu_pp_DifficultyHandle *handle,
+                                                         const struct rosu_pp_BeatmapHandle *map);
+
+/**
+ * Create a gradual difficulty calculator for incremental star rating calculation.
+ *
+ * The gradual difficulty calculator processes hit objects one at a time,
+ * returning updated star ratings after each object.
+ *
+ * **Parameters:**
+ * - `handle`: A `DifficultyHandle` pointer. **Consumed** by this call.
+ *   The caller must NOT use or free this handle afterward.
+ * - `map`: A valid `BeatmapHandle` pointer (must not be null).
+ *
+ * **Returns:** A non-null handle on success, or `NULL` if either pointer is null.
+ *
+ * **Ownership:** This function **consumes** the `difficulty` handle. The caller
+ * must NOT call `rosu_pp_difficulty_free` on the difficulty handle, nor use it
+ * after this call. The `map` handle is only borrowed and remains valid.
+ *
+ * **Memory:** The caller owns the returned handle and must free it with
+ * `rosu_pp_gradual_difficulty_free`.
+ */
+struct rosu_pp_GradualDifficultyHandle *rosu_pp_difficulty_gradual_difficulty(struct rosu_pp_DifficultyHandle *handle,
+                                                                              const struct rosu_pp_BeatmapHandle *map);
+
+/**
+ * Turn the difficulty calculator into an inspector to view its configured values.
+ *
+ * **Parameters:**
+ * - `handle`: A `DifficultyHandle` pointer. **Consumed** by this call.
+ *   The handle must NOT be used or freed after this call.
+ *
+ * **Returns:** A non-null `InspectDifficultyHandle` pointer on success, or `NULL`
+ * if `handle` is null.
+ *
+ * **Ownership:** This function **consumes** the `difficulty` handle. The caller
+ * must NOT call `rosu_pp_difficulty_free` on the handle, nor use it after this call.
+ *
+ * **Memory:** The caller owns the returned handle and must free it with
+ * `rosu_pp_inspect_difficulty_free`.
+ */
+struct rosu_pp_InspectDifficultyHandle *rosu_pp_difficulty_inspect(struct rosu_pp_DifficultyHandle *handle);
+
+/**
+ * Inspect the mods configured on a difficulty calculator.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `InspectDifficultyHandle` pointer (must not be null).
+ *
+ * **Returns:** A `ModsHandle` pointer on success, or `NULL` if `handle` is null.
+ *
+ * **Memory:** The returned handle is owned by the inspector and will be freed
+ * when the inspector is freed. The caller must NOT free it separately.
+ */
+struct rosu_pp_ModsHandle *rosu_pp_inspect_difficulty_mods(const struct rosu_pp_InspectDifficultyHandle *handle);
+
+/**
+ * Inspect the passed objects count configured on a difficulty calculator.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `InspectDifficultyHandle` pointer (must not be null).
+ * - `out`: Pointer to store the result (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` or `out` is null. A value of `0` with `FfiResult::Ok` means
+ * no passed objects were set (defaults to processing all objects).
+ */
+enum rosu_pp_FfiResult rosu_pp_inspect_difficulty_passed_objects(const struct rosu_pp_InspectDifficultyHandle *handle,
+                                                                 uint32_t *out);
+
+/**
+ * Inspect the clock rate configured on a difficulty calculator.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `InspectDifficultyHandle` pointer (must not be null).
+ * - `out`: Pointer to store the result (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` or `out` is null. A value of `0.0` means no custom clock rate was set.
+ */
+enum rosu_pp_FfiResult rosu_pp_inspect_difficulty_clock_rate(const struct rosu_pp_InspectDifficultyHandle *handle,
+                                                             double *out);
+
+/**
+ * Inspect the AR override configured on a difficulty calculator.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `InspectDifficultyHandle` pointer (must not be null).
+ * - `out`: Pointer to store the result (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` or `out` is null. A value of `0.0` means no AR override was set.
+ *
+ * The `fixed` flag indicates whether the value is fixed (true) or relative to mods (false).
+ * Returns `0.0` for `fixed` if no AR override was set.
+ */
+enum rosu_pp_FfiResult rosu_pp_inspect_difficulty_ar(const struct rosu_pp_InspectDifficultyHandle *handle,
+                                                     float *out,
+                                                     bool *fixed);
+
+/**
+ * Inspect the CS override configured on a difficulty calculator.
+ *
+ * Same pattern as `rosu_pp_inspect_difficulty_ar`.
+ */
+enum rosu_pp_FfiResult rosu_pp_inspect_difficulty_cs(const struct rosu_pp_InspectDifficultyHandle *handle,
+                                                     float *out,
+                                                     bool *fixed);
+
+/**
+ * Inspect the HP override configured on a difficulty calculator.
+ *
+ * Same pattern as `rosu_pp_inspect_difficulty_ar`.
+ */
+enum rosu_pp_FfiResult rosu_pp_inspect_difficulty_hp(const struct rosu_pp_InspectDifficultyHandle *handle,
+                                                     float *out,
+                                                     bool *fixed);
+
+/**
+ * Inspect the OD override configured on a difficulty calculator.
+ *
+ * Same pattern as `rosu_pp_inspect_difficulty_ar`.
+ */
+enum rosu_pp_FfiResult rosu_pp_inspect_difficulty_od(const struct rosu_pp_InspectDifficultyHandle *handle,
+                                                     float *out,
+                                                     bool *fixed);
+
+/**
+ * Inspect whether hardrock offsets are configured on a difficulty calculator.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `InspectDifficultyHandle` pointer (must not be null).
+ * - `out`: Pointer to store the result (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` or `out` is null. A value of `false` means no custom setting was applied.
+ */
+enum rosu_pp_FfiResult rosu_pp_inspect_difficulty_hardrock_offsets(const struct rosu_pp_InspectDifficultyHandle *handle,
+                                                                   bool *out);
+
+/**
+ * Inspect whether lazer mode is configured on a difficulty calculator.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `InspectDifficultyHandle` pointer (must not be null).
+ * - `out`: Pointer to store the result (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` or `out` is null. A value of `false` means no custom setting was applied.
+ */
+enum rosu_pp_FfiResult rosu_pp_inspect_difficulty_lazer(const struct rosu_pp_InspectDifficultyHandle *handle,
+                                                        bool *out);
+
+/**
+ * Free an inspected difficulty handle.
+ *
+ * **Parameters:**
+ * - `handle`: A handle returned by `rosu_pp_difficulty_inspect`. May be null
+ *   (null is a no-op).
+ */
+void rosu_pp_inspect_difficulty_free(struct rosu_pp_InspectDifficultyHandle *handle);
+
+/**
  * Free a difficulty calculator handle.
  *
  * **Parameters:**
@@ -530,9 +854,61 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_calculate(struct rosu_pp_DifficultyHan
  *   `rosu_pp_difficulty_clone`. May be null (null is a no-op).
  *
  * **Note:** Do NOT call this function if the handle was passed to
- * `rosu_pp_difficulty_calculate` — that function consumes the handle.
+ * `rosu_pp_difficulty_calculate`, `rosu_pp_difficulty_checked_calculate`,
+ * `rosu_pp_difficulty_strains`, `rosu_pp_difficulty_gradual_difficulty`,
+ * or `rosu_pp_difficulty_inspect` — those functions consume the handle.
  */
 void rosu_pp_difficulty_free(struct rosu_pp_DifficultyHandle *handle);
+
+/**
+ * Create a new gradual difficulty calculator.
+ *
+ * **Parameters:**
+ * - `difficulty`: A `DifficultyHandle` pointer. **Consumed** by this call.
+ *   The caller must NOT use or free this handle afterward.
+ * - `map`: A valid `BeatmapHandle` pointer (must not be null).
+ *
+ * **Returns:** A non-null handle on success, or `NULL` if either pointer is null.
+ *
+ * **Ownership:** This function **consumes** the `difficulty` handle. The caller
+ * must NOT call `rosu_pp_difficulty_free` on the difficulty handle, nor use it
+ * after this call. The `map` handle is only borrowed and remains valid.
+ *
+ * **Memory:** The caller owns the returned handle and must free it with
+ * `rosu_pp_gradual_difficulty_free`.
+ */
+struct rosu_pp_GradualDifficultyHandle *rosu_pp_gradual_difficulty_new(struct rosu_pp_DifficultyHandle *difficulty,
+                                                                       const struct rosu_pp_BeatmapHandle *map);
+
+/**
+ * Process the next hit object and return incremental difficulty attributes.
+ *
+ * Call this function repeatedly until it returns `FfiResult::Done` (all objects processed).
+ *
+ * **Parameters:**
+ * - `handle`: A valid `GradualDifficultyHandle` pointer (must not be null).
+ * - `out`: Pointer to a `DifficultyAttributes` struct where results will be
+ *   written (must not be null).
+ *
+ * **Returns:**
+ * - `FfiResult::Ok` — More objects remain; call `next` again.
+ * - `FfiResult::Done` — All objects have been processed. No more calls needed.
+ * - `FfiResult::NullPointer` — `handle` or `out` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after `Ok` and can be used for
+ * subsequent calls.
+ */
+enum rosu_pp_FfiResult rosu_pp_gradual_difficulty_next(struct rosu_pp_GradualDifficultyHandle *handle,
+                                                       struct rosu_pp_DifficultyAttributes *out);
+
+/**
+ * Free a gradual difficulty calculator handle.
+ *
+ * **Parameters:**
+ * - `handle`: A handle returned by `rosu_pp_gradual_difficulty_new`. May be
+ *   null (null is a no-op).
+ */
+void rosu_pp_gradual_difficulty_free(struct rosu_pp_GradualDifficultyHandle *handle);
 
 /**
  * Create a new gradual performance calculator.
@@ -764,6 +1140,46 @@ enum rosu_pp_FfiResult rosu_pp_performance_mods(struct rosu_pp_PerformanceHandle
                                                 const struct rosu_pp_ModsHandle *mods);
 
 /**
+ * Set the priority of hitresults when generating remaining hitresults.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `PerformanceHandle` pointer (must not be null).
+ * - `priority`: The hitresult priority: `0` for BestCase (prioritize good hitresults),
+ *   `1` for WorstCase (prioritize bad hitresults).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_hitresult_priority(struct rosu_pp_PerformanceHandle *handle,
+                                                              uint32_t priority);
+
+/**
+ * Calculate performance attributes for the configured settings after verifying
+ * the map is not too suspicious.
+ *
+ * Same as `rosu_pp_performance_calculate` but checks the map for suspicious
+ * hit objects first. If the map is too suspicious, returns `FfiResult::TooSuspicious`.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `PerformanceHandle` pointer. **Consumed** by this call.
+ *   The handle must NOT be used or freed after this call.
+ * - `out`: Pointer to a `PerformanceAttributes` struct where results will be
+ *   written (must not be null).
+ *
+ * **Returns:**
+ * - `FfiResult::Ok` — Calculation succeeded.
+ * - `FfiResult::TooSuspicious` — The map contains suspicious hit objects.
+ * - `FfiResult::NullPointer` — `handle` or `out` is null.
+ *
+ * **Ownership:** This function **consumes** the `handle`. The caller must NOT
+ * call `rosu_pp_performance_free` on the handle, nor use it after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_checked_calculate(struct rosu_pp_PerformanceHandle *handle,
+                                                             struct rosu_pp_PerformanceAttributes *out);
+
+/**
  * Set the full score state at once.
  *
  * This is an alternative to setting individual hit counts (n300, n100, etc.)
@@ -818,3 +1234,39 @@ void rosu_pp_performance_free(struct rosu_pp_PerformanceHandle *handle);
  * for the play being evaluated.
  */
 struct rosu_pp_ScoreState rosu_pp_score_state_new(void);
+
+/**
+ * Calculate the total number of hits from a score state for a given game mode.
+ *
+ * Adds up n300, n100, n50 (if not taiko), n_katu (if not osu/taiko),
+ * and n_geki (if not osu/taiko/catch) to get the total hit count.
+ *
+ * **Parameters:**
+ * - `state`: A reference to a `ScoreState` struct.
+ * - `mode`: The game mode (0=osu!, 1=taiko, 2=catch, 3=mania).
+ *
+ * **Returns:** The total number of hits, or 0 if `state` is null.
+ */
+uint32_t rosu_pp_score_state_total_hits(const struct rosu_pp_ScoreState *state, int32_t mode);
+
+/**
+ * Get strain data from a strains handle.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `StrainsHandle` pointer (must not be null).
+ * - `out`: Pointer to a `StrainsData` struct where results will be written.
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` or `out` is null.
+ */
+enum rosu_pp_FfiResult rosu_pp_strains_data(const struct rosu_pp_StrainsHandle *handle,
+                                            struct rosu_pp_StrainsData *out);
+
+/**
+ * Free a strains handle and release its memory.
+ *
+ * **Parameters:**
+ * - `handle`: A handle returned by `rosu_pp_difficulty_strains`. May be null
+ *   (null is a no-op).
+ */
+void rosu_pp_strains_free(struct rosu_pp_StrainsHandle *handle);

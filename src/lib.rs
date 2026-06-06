@@ -80,3 +80,4 @@ mod mode;
 mod mods;
 mod performance;
 mod score_state;
+mod strains;
