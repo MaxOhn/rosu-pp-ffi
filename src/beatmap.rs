@@ -24,32 +24,42 @@ handle!(BeatmapHandle -> Beatmap);
 ///
 /// **Parameters:**
 /// - `path`: Null-terminated C string containing the file path to the `.osu` file.
+/// - `out`: Pointer to store the resulting `BeatmapHandle`.
 ///
-/// **Returns:** A non-null handle on success, or `NULL` if:
-/// - The path pointer is null
-/// - The path contains invalid UTF-8
-/// - The file cannot be read or parsed
+/// **Returns:**
+/// - `FfiResult::Ok` — Success. `out` is set to a non-null handle (caller owns).
+/// - `FfiResult::ParseError` — The path is invalid UTF-8 or the file could not
+///   be read or parsed. `out` is set to `NULL`.
+/// - `FfiResult::NullPointer` — The `path` or `out` pointer is null.
 ///
-/// **Memory:** The caller owns the returned handle and must free it with
-/// `rosu_pp_beatmap_free`.
+/// **Memory:** On `Ok`, the caller owns the handle written to `out` and must
+/// free it with `rosu_pp_beatmap_free`.
 #[no_mangle]
-pub extern "C" fn rosu_pp_beatmap_from_path(path: *const ffi::c_char) -> *mut BeatmapHandle {
-    if path.is_null() {
-        return ptr::null_mut();
+pub extern "C" fn rosu_pp_beatmap_from_path(
+    path: *const ffi::c_char,
+    out: *mut *mut BeatmapHandle,
+) -> FfiResult {
+    if path.is_null() || out.is_null() {
+        return FfiResult::NullPointer;
     }
 
     let c_str = unsafe { ffi::CStr::from_ptr(path) };
 
     let Ok(path) = c_str.to_str() else {
-        return ptr::null_mut();
+        unsafe { *out = ptr::null_mut() };
+
+        return FfiResult::ParseError;
     };
 
-    let beatmap = match Beatmap::from_path(path) {
-        Ok(b) => b,
-        Err(_) => return ptr::null_mut(),
+    let Ok(beatmap) = Beatmap::from_path(path) else {
+        unsafe { *out = ptr::null_mut() };
+
+        return FfiResult::ParseError;
     };
 
-    Box::into_raw(Box::new(BeatmapHandle::from(beatmap)))
+    unsafe { *out = Box::into_raw(Box::new(BeatmapHandle::from(beatmap))) };
+
+    FfiResult::Ok
 }
 
 /// Load a beatmap from raw bytes.
@@ -57,28 +67,38 @@ pub extern "C" fn rosu_pp_beatmap_from_path(path: *const ffi::c_char) -> *mut Be
 /// **Parameters:**
 /// - `bytes`: Pointer to a buffer containing the `.osu` file contents.
 /// - `len`: Length of the buffer in bytes.
+/// - `out`: Pointer to store the resulting `BeatmapHandle`.
 ///
-/// **Returns:** A non-null handle on success, or `NULL` if:
-/// - The bytes pointer is null
-/// - The bytes cannot be parsed as a valid beatmap
+/// **Returns:**
+/// - `FfiResult::Ok` — Success. `out` is set to a non-null handle (caller owns).
+/// - `FfiResult::ParseError` — The bytes could not be parsed as a valid beatmap.
+///   `out` is set to `NULL`.
+/// - `FfiResult::NullPointer` — The `bytes` or `out` pointer is null.
 ///
-/// **Memory:** The caller owns the returned handle and must free it with
-/// `rosu_pp_beatmap_free`. The `bytes` buffer is only borrowed during this call
-/// and may be freed immediately after.
+/// **Memory:** On `Ok`, the caller owns the handle written to `out` and must
+/// free it with `rosu_pp_beatmap_free`. The `bytes` buffer is only borrowed
+/// during this call and may be freed immediately after.
 #[no_mangle]
-pub extern "C" fn rosu_pp_beatmap_from_bytes(bytes: *const u8, len: usize) -> *mut BeatmapHandle {
-    if bytes.is_null() {
-        return ptr::null_mut();
+pub extern "C" fn rosu_pp_beatmap_from_bytes(
+    bytes: *const u8,
+    len: usize,
+    out: *mut *mut BeatmapHandle,
+) -> FfiResult {
+    if bytes.is_null() || out.is_null() {
+        return FfiResult::NullPointer;
     }
 
     let slice = unsafe { slice::from_raw_parts(bytes, len) };
 
-    let beatmap = match Beatmap::from_bytes(slice) {
-        Ok(b) => b,
-        Err(_) => return ptr::null_mut(),
+    let Ok(beatmap) = Beatmap::from_bytes(slice) else {
+        unsafe { *out = ptr::null_mut() };
+
+        return FfiResult::ParseError;
     };
 
-    Box::into_raw(Box::new(BeatmapHandle::from(beatmap)))
+    unsafe { *out = Box::into_raw(Box::new(BeatmapHandle::from(beatmap))) };
+
+    FfiResult::Ok
 }
 
 macro_rules! getter {

@@ -884,16 +884,19 @@ void rosu_pp_beatmap_attrs_builder_free(struct rosu_pp_BeatmapAttributesBuilderH
  *
  * **Parameters:**
  * - `path`: Null-terminated C string containing the file path to the `.osu` file.
+ * - `out`: Pointer to store the resulting `BeatmapHandle`.
  *
- * **Returns:** A non-null handle on success, or `NULL` if:
- * - The path pointer is null
- * - The path contains invalid UTF-8
- * - The file cannot be read or parsed
+ * **Returns:**
+ * - `FfiResult::Ok` — Success. `out` is set to a non-null handle (caller owns).
+ * - `FfiResult::ParseError` — The path is invalid UTF-8 or the file could not
+ *   be read or parsed. `out` is set to `NULL`.
+ * - `FfiResult::NullPointer` — The `path` or `out` pointer is null.
  *
- * **Memory:** The caller owns the returned handle and must free it with
- * `rosu_pp_beatmap_free`.
+ * **Memory:** On `Ok`, the caller owns the handle written to `out` and must
+ * free it with `rosu_pp_beatmap_free`.
  */
-struct rosu_pp_BeatmapHandle *rosu_pp_beatmap_from_path(const char *path);
+enum rosu_pp_FfiResult rosu_pp_beatmap_from_path(const char *path,
+                                                 struct rosu_pp_BeatmapHandle **out);
 
 /**
  * Load a beatmap from raw bytes.
@@ -901,16 +904,21 @@ struct rosu_pp_BeatmapHandle *rosu_pp_beatmap_from_path(const char *path);
  * **Parameters:**
  * - `bytes`: Pointer to a buffer containing the `.osu` file contents.
  * - `len`: Length of the buffer in bytes.
+ * - `out`: Pointer to store the resulting `BeatmapHandle`.
  *
- * **Returns:** A non-null handle on success, or `NULL` if:
- * - The bytes pointer is null
- * - The bytes cannot be parsed as a valid beatmap
+ * **Returns:**
+ * - `FfiResult::Ok` — Success. `out` is set to a non-null handle (caller owns).
+ * - `FfiResult::ParseError` — The bytes could not be parsed as a valid beatmap.
+ *   `out` is set to `NULL`.
+ * - `FfiResult::NullPointer` — The `bytes` or `out` pointer is null.
  *
- * **Memory:** The caller owns the returned handle and must free it with
- * `rosu_pp_beatmap_free`. The `bytes` buffer is only borrowed during this call
- * and may be freed immediately after.
+ * **Memory:** On `Ok`, the caller owns the handle written to `out` and must
+ * free it with `rosu_pp_beatmap_free`. The `bytes` buffer is only borrowed
+ * during this call and may be freed immediately after.
  */
-struct rosu_pp_BeatmapHandle *rosu_pp_beatmap_from_bytes(const uint8_t *bytes, size_t len);
+enum rosu_pp_FfiResult rosu_pp_beatmap_from_bytes(const uint8_t *bytes,
+                                                  size_t len,
+                                                  struct rosu_pp_BeatmapHandle **out);
 
 /**
  * Check whether the beatmap contains suspicious hit objects.
