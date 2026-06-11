@@ -1,15 +1,19 @@
-//! Gradual (per-frame) performance calculator.
+//! Gradual (per-object) performance calculator.
 //!
 //! Computes performance points incrementally as each hit object is processed,
 //! enabling real-time score progression tracking.
 
 use std::ptr;
 
-use rosu_pp::GradualPerformance as RosuGradualPerformance;
+use rosu_pp::GradualPerformance;
 
 use crate::{
-    attributes::PerformanceAttributes, beatmap::BeatmapHandle, difficulty::DifficultyHandle,
-    error::FfiResult, score_state::ScoreState,
+    attributes::PerformanceAttributes,
+    beatmap::BeatmapHandle,
+    difficulty::DifficultyHandle,
+    error::FfiResult,
+    handle::{HandleMut, HandleOwned, HandleRef},
+    score_state::ScoreState,
 };
 
 /// Opaque handle to a gradual performance calculator.
@@ -18,9 +22,9 @@ use crate::{
 /// using `rosu_pp_gradual_performance_next` until it returns `FfiResult::Done`.
 ///
 /// **Must be freed** with `rosu_pp_gradual_performance_free` when done.
-pub struct GradualPerformanceHandle {
-    gradual: RosuGradualPerformance,
-}
+pub struct GradualPerformanceHandle(GradualPerformance);
+
+handle!(GradualPerformanceHandle -> GradualPerformance);
 
 /// Create a new gradual performance calculator.
 ///
@@ -46,11 +50,9 @@ pub extern "C" fn rosu_pp_gradual_performance_new(
         return ptr::null_mut();
     }
 
-    let difficulty = unsafe { Box::from_raw(difficulty) };
-    let map = unsafe { &(*map).beatmap };
-    let gradual = difficulty.difficulty.gradual_performance(map);
+    let gradual = difficulty.into_owned().gradual_performance(map.by_ref());
 
-    Box::into_raw(Box::new(GradualPerformanceHandle { gradual }))
+    Box::into_raw(Box::new(GradualPerformanceHandle::from(gradual)))
 }
 
 /// Process the next hit object and return incremental performance attributes.
@@ -81,9 +83,7 @@ pub extern "C" fn rosu_pp_gradual_performance_next(
         return FfiResult::NullPointer;
     }
 
-    let h = unsafe { &mut *handle };
-
-    let Some(attrs) = h.gradual.next(state.into()) else {
+    let Some(attrs) = handle.by_mut().next(state.into()) else {
         return FfiResult::Done;
     };
 
@@ -99,7 +99,5 @@ pub extern "C" fn rosu_pp_gradual_performance_next(
 ///   null (null is a no-op).
 #[no_mangle]
 pub extern "C" fn rosu_pp_gradual_performance_free(handle: *mut GradualPerformanceHandle) {
-    if !handle.is_null() {
-        unsafe { drop(Box::from_raw(handle)) };
-    }
+    handle.drop_handle();
 }

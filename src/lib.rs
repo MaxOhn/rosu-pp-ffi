@@ -71,6 +71,9 @@
 //! - rosu-map — Beatmap parsing
 //! - rosu-mods — Game mod parsing
 
+#[macro_use]
+mod handle;
+
 mod attributes;
 mod beatmap;
 mod difficulty;

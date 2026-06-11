@@ -10,15 +10,19 @@ use rosu_mods::{serde::GameModsSeed, GameModsLegacy};
 use rosu_pp::GameMods;
 use serde::de::{value::StrDeserializer, DeserializeSeed, IntoDeserializer};
 
-use crate::{error::FfiResult, mode::GameMode};
+use crate::{
+    error::FfiResult,
+    handle::{HandleOwned, HandleRef},
+    mode::GameMode,
+};
 
 /// Opaque handle to a game mods collection.
 ///
 /// Created via `rosu_pp_mods_parse`, `rosu_pp_mods_parse_with_mode`, or
 /// `rosu_pp_mods_from_bits`. Must be freed with `rosu_pp_mods_free`.
-pub struct ModsHandle {
-    pub(crate) mods: GameMods,
-}
+pub struct ModsHandle(GameMods);
+
+handle!(ModsHandle -> GameMods);
 
 fn parse_mods(s: *const ffi::c_char, seed: GameModsSeed, out: *mut ModsHandle) -> FfiResult {
     #[derive(Debug)]
@@ -54,7 +58,7 @@ fn parse_mods(s: *const ffi::c_char, seed: GameModsSeed, out: *mut ModsHandle) -
         return FfiResult::ParseError;
     };
 
-    unsafe { *out = ModsHandle { mods: mods.into() } };
+    unsafe { *out = ModsHandle::from(GameMods::from(mods)) };
 
     FfiResult::Ok
 }
@@ -138,7 +142,7 @@ pub extern "C" fn rosu_pp_mods_parse(
 pub extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
     let mods = GameModsLegacy::from_bits(bits);
 
-    Box::into_raw(Box::new(ModsHandle { mods: mods.into() }))
+    Box::into_raw(Box::new(ModsHandle::from(GameMods::from(mods))))
 }
 
 /// Convert a mods handle to legacy bitflags.
@@ -149,12 +153,10 @@ pub extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
 /// **Returns:** A u32 bitflag value representing the mods, or 0 if `mods` is null.
 #[no_mangle]
 pub extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
-    let mods = unsafe { &*mods };
-
-    match mods.mods {
-        GameMods::Lazer(ref mods) => mods.bits(),
-        GameMods::Intermode(ref mods) => mods.bits(),
-        GameMods::Legacy(ref mods) => mods.bits(),
+    match mods.by_ref() {
+        GameMods::Lazer(mods) => mods.bits(),
+        GameMods::Intermode(mods) => mods.bits(),
+        GameMods::Legacy(mods) => mods.bits(),
     }
 }
 
@@ -171,12 +173,10 @@ pub extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
 /// `rosu_pp_mods_free_string`. Do NOT use standard `free()` on this pointer.
 #[no_mangle]
 pub extern "C" fn rosu_pp_mods_to_string(mods: *const ModsHandle) -> *mut ffi::c_char {
-    let mods = unsafe { &*mods };
-
-    let s = match mods.mods {
-        GameMods::Lazer(ref mods) => mods.to_string(),
-        GameMods::Intermode(ref mods) => mods.to_string(),
-        GameMods::Legacy(ref mods) => mods.to_string(),
+    let s = match mods.by_ref() {
+        GameMods::Lazer(mods) => mods.to_string(),
+        GameMods::Intermode(mods) => mods.to_string(),
+        GameMods::Legacy(mods) => mods.to_string(),
     };
 
     ffi::CString::new(s).unwrap().into_raw()
@@ -205,7 +205,5 @@ pub extern "C" fn rosu_pp_mods_free_string(s: *mut ffi::c_char) {
 ///   May be null (null is a no-op).
 #[no_mangle]
 pub extern "C" fn rosu_pp_mods_free(handle: *mut ModsHandle) {
-    if !handle.is_null() {
-        unsafe { drop(Box::from_raw(handle)) };
-    }
+    handle.drop_handle();
 }

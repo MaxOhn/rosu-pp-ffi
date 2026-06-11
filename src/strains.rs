@@ -3,14 +3,11 @@
 //! Provides the `StrainsHandle` type and `StrainsData` struct for accessing
 //! strain peak data for all four osu! game modes.
 
-use std::ptr;
+use std::{mem::ManuallyDrop, ptr};
 
 use rosu_pp::{
-    any::Strains as RosuStrains, catch::CatchStrains, mania::ManiaStrains, osu::OsuStrains,
-    taiko::TaikoStrains,
+    any::Strains, catch::CatchStrains, mania::ManiaStrains, osu::OsuStrains, taiko::TaikoStrains,
 };
-
-use crate::error::FfiResult;
 
 /// The result of calculating the strains on a map.
 ///
@@ -54,210 +51,143 @@ pub struct StrainsData {
     pub strains: *const f64,
 }
 
-/// Opaque handle to strain data.
-///
-/// Created via `rosu_pp_difficulty_strains` (in difficulty.rs). The handle owns
-/// the strain arrays and must be freed with `rosu_pp_strains_free`.
-pub struct StrainsHandle {
-    _strains: RosuStrains,
-    /// Boxed slices for owned data (kept alive by the handle)
-    data: StrainsDataHolder,
+impl StrainsData {
+    pub fn new(strains: Strains) -> Self {
+        match strains {
+            Strains::Osu(OsuStrains {
+                aim,
+                aim_no_sliders,
+                speed,
+                flashlight,
+            }) => {
+                let len = aim.len();
+
+                StrainsData {
+                    mode: 0,
+                    section_len: OsuStrains::SECTION_LEN,
+                    len,
+                    aim: ManuallyDrop::new(aim.into_boxed_slice()).as_ptr(),
+                    aim_no_sliders: ManuallyDrop::new(aim_no_sliders.into_boxed_slice()).as_ptr(),
+                    speed: ManuallyDrop::new(speed.into_boxed_slice()).as_ptr(),
+                    flashlight: ManuallyDrop::new(flashlight.into_boxed_slice()).as_ptr(),
+                    stamina: ptr::null(),
+                    rhythm: ptr::null(),
+                    color: ptr::null(),
+                    reading: ptr::null(),
+                    single_color_stamina: ptr::null(),
+                    movement: ptr::null(),
+                    strains: ptr::null(),
+                }
+            }
+            Strains::Taiko(TaikoStrains {
+                color,
+                reading,
+                rhythm,
+                stamina,
+                single_color_stamina,
+            }) => {
+                let len = color.len();
+
+                StrainsData {
+                    mode: 1,
+                    section_len: TaikoStrains::SECTION_LEN,
+                    len,
+                    aim: ptr::null(),
+                    aim_no_sliders: ptr::null(),
+                    speed: ptr::null(),
+                    flashlight: ptr::null(),
+                    stamina: ManuallyDrop::new(stamina.into_boxed_slice()).as_ptr(),
+                    rhythm: ManuallyDrop::new(rhythm.into_boxed_slice()).as_ptr(),
+                    color: ManuallyDrop::new(color.into_boxed_slice()).as_ptr(),
+                    reading: ManuallyDrop::new(reading.into_boxed_slice()).as_ptr(),
+                    single_color_stamina: ManuallyDrop::new(
+                        single_color_stamina.into_boxed_slice(),
+                    )
+                    .as_ptr(),
+                    movement: ptr::null(),
+                    strains: ptr::null(),
+                }
+            }
+            Strains::Catch(CatchStrains { movement }) => {
+                let len = movement.len();
+
+                StrainsData {
+                    mode: 2,
+                    section_len: CatchStrains::SECTION_LEN,
+                    len,
+                    aim: ptr::null(),
+                    aim_no_sliders: ptr::null(),
+                    speed: ptr::null(),
+                    flashlight: ptr::null(),
+                    stamina: ptr::null(),
+                    rhythm: ptr::null(),
+                    color: ptr::null(),
+                    reading: ptr::null(),
+                    single_color_stamina: ptr::null(),
+                    movement: ManuallyDrop::new(movement.into_boxed_slice()).as_ptr(),
+                    strains: ptr::null(),
+                }
+            }
+            Strains::Mania(ManiaStrains { strains }) => {
+                let len = strains.len();
+
+                StrainsData {
+                    mode: 3,
+                    section_len: ManiaStrains::SECTION_LEN,
+                    len,
+                    aim: ptr::null(),
+                    aim_no_sliders: ptr::null(),
+                    speed: ptr::null(),
+                    flashlight: ptr::null(),
+                    stamina: ptr::null(),
+                    rhythm: ptr::null(),
+                    color: ptr::null(),
+                    reading: ptr::null(),
+                    single_color_stamina: ptr::null(),
+                    movement: ptr::null(),
+                    strains: ManuallyDrop::new(strains.into_boxed_slice()).as_ptr(),
+                }
+            }
+        }
+    }
 }
 
-enum StrainsDataHolder {
-    Osu {
-        aim: Box<[f64]>,
-        aim_no_sliders: Box<[f64]>,
-        speed: Box<[f64]>,
-        flashlight: Box<[f64]>,
-    },
-    Taiko {
-        color: Box<[f64]>,
-        reading: Box<[f64]>,
-        rhythm: Box<[f64]>,
-        stamina: Box<[f64]>,
-        single_color_stamina: Box<[f64]>,
-    },
-    Catch {
-        movement: Box<[f64]>,
-    },
-    Mania {
-        strains: Box<[f64]>,
-    },
-}
-
-/// Get strain data from a strains handle.
-///
-/// **Parameters:**
-/// - `handle`: A valid `StrainsHandle` pointer (must not be null).
-/// - `out`: Pointer to a `StrainsData` struct where results will be written.
-///
-/// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
-/// `handle` or `out` is null.
 #[no_mangle]
-pub extern "C" fn rosu_pp_strains_data(
-    handle: *const StrainsHandle,
-    out: *mut StrainsData,
-) -> FfiResult {
-    if handle.is_null() || out.is_null() {
-        return FfiResult::NullPointer;
+pub extern "C" fn rosu_pp_strains_free(handle: *mut StrainsData) {
+    let StrainsData {
+        mode: _,
+        section_len: _,
+        len,
+        aim,
+        aim_no_sliders,
+        speed,
+        flashlight,
+        stamina,
+        rhythm,
+        color,
+        reading,
+        single_color_stamina,
+        movement,
+        strains,
+    } = unsafe { &mut *handle };
+
+    macro_rules! drop {
+        ($ptr:ident) => {
+            if !(*$ptr).is_null() {
+                drop(unsafe { Box::from_raw(ptr::slice_from_raw_parts_mut($ptr, *len)) });
+            }
+        };
     }
 
-    let h = unsafe { &*handle };
-    unsafe { *out = data_to_strains_data(&h.data) };
-
-    FfiResult::Ok
-}
-
-/// Free a strains handle and release its memory.
-///
-/// **Parameters:**
-/// - `handle`: A handle returned by `rosu_pp_difficulty_strains`. May be null
-///   (null is a no-op).
-#[no_mangle]
-pub extern "C" fn rosu_pp_strains_free(handle: *mut StrainsHandle) {
-    if !handle.is_null() {
-        unsafe { drop(Box::from_raw(handle)) };
-    }
-}
-
-/// Build a StrainsHandle from a RosuStrains value.
-///
-/// Internal function called by difficulty.rs.
-pub fn build_strains_handle(strains: RosuStrains) -> Box<StrainsHandle> {
-    Box::new(StrainsHandle {
-        _strains: strains.clone(),
-        data: build_data_holder(&strains),
-    })
-}
-
-fn build_data_holder(strains: &RosuStrains) -> StrainsDataHolder {
-    match strains {
-        RosuStrains::Osu(OsuStrains {
-            aim,
-            aim_no_sliders,
-            speed,
-            flashlight,
-        }) => StrainsDataHolder::Osu {
-            aim: aim.clone().into_boxed_slice(),
-            aim_no_sliders: aim_no_sliders.clone().into_boxed_slice(),
-            speed: speed.clone().into_boxed_slice(),
-            flashlight: flashlight.clone().into_boxed_slice(),
-        },
-        RosuStrains::Taiko(TaikoStrains {
-            color,
-            reading,
-            rhythm,
-            stamina,
-            single_color_stamina,
-        }) => StrainsDataHolder::Taiko {
-            color: color.clone().into_boxed_slice(),
-            reading: reading.clone().into_boxed_slice(),
-            rhythm: rhythm.clone().into_boxed_slice(),
-            stamina: stamina.clone().into_boxed_slice(),
-            single_color_stamina: single_color_stamina.clone().into_boxed_slice(),
-        },
-        RosuStrains::Catch(CatchStrains { movement }) => StrainsDataHolder::Catch {
-            movement: movement.clone().into_boxed_slice(),
-        },
-        RosuStrains::Mania(ManiaStrains { strains: strains_1 }) => StrainsDataHolder::Mania {
-            strains: strains_1.clone().into_boxed_slice(),
-        },
-    }
-}
-
-fn data_to_strains_data(data: &StrainsDataHolder) -> StrainsData {
-    match data {
-        StrainsDataHolder::Osu {
-            aim,
-            aim_no_sliders,
-            speed,
-            flashlight,
-        } => {
-            let len = aim.len();
-
-            StrainsData {
-                mode: 0,
-                section_len: OsuStrains::SECTION_LEN,
-                len,
-                aim: aim.as_ptr(),
-                aim_no_sliders: aim_no_sliders.as_ptr(),
-                speed: speed.as_ptr(),
-                flashlight: flashlight.as_ptr(),
-                stamina: ptr::null(),
-                rhythm: ptr::null(),
-                color: ptr::null(),
-                reading: ptr::null(),
-                single_color_stamina: ptr::null(),
-                movement: ptr::null(),
-                strains: ptr::null(),
-            }
-        }
-        StrainsDataHolder::Taiko {
-            color,
-            reading,
-            rhythm,
-            stamina,
-            single_color_stamina,
-        } => {
-            let len = color.len();
-
-            StrainsData {
-                mode: 1,
-                section_len: TaikoStrains::SECTION_LEN,
-                len,
-                aim: ptr::null(),
-                aim_no_sliders: ptr::null(),
-                speed: ptr::null(),
-                flashlight: ptr::null(),
-                stamina: stamina.as_ptr(),
-                rhythm: rhythm.as_ptr(),
-                color: color.as_ptr(),
-                reading: reading.as_ptr(),
-                single_color_stamina: single_color_stamina.as_ptr(),
-                movement: ptr::null(),
-                strains: ptr::null(),
-            }
-        }
-        StrainsDataHolder::Catch { movement } => {
-            let len = movement.len();
-
-            StrainsData {
-                mode: 2,
-                section_len: CatchStrains::SECTION_LEN,
-                len,
-                aim: ptr::null(),
-                aim_no_sliders: ptr::null(),
-                speed: ptr::null(),
-                flashlight: ptr::null(),
-                stamina: ptr::null(),
-                rhythm: ptr::null(),
-                color: ptr::null(),
-                reading: ptr::null(),
-                single_color_stamina: ptr::null(),
-                movement: movement.as_ptr(),
-                strains: ptr::null(),
-            }
-        }
-        StrainsDataHolder::Mania { strains } => {
-            let len = strains.len();
-
-            StrainsData {
-                mode: 3,
-                section_len: ManiaStrains::SECTION_LEN,
-                len,
-                aim: ptr::null(),
-                aim_no_sliders: ptr::null(),
-                speed: ptr::null(),
-                flashlight: ptr::null(),
-                stamina: ptr::null(),
-                rhythm: ptr::null(),
-                color: ptr::null(),
-                reading: ptr::null(),
-                single_color_stamina: ptr::null(),
-                movement: ptr::null(),
-                strains: strains.as_ptr(),
-            }
-        }
-    }
+    drop!(aim);
+    drop!(aim_no_sliders);
+    drop!(speed);
+    drop!(flashlight);
+    drop!(stamina);
+    drop!(rhythm);
+    drop!(color);
+    drop!(reading);
+    drop!(single_color_stamina);
+    drop!(movement);
+    drop!(strains);
 }

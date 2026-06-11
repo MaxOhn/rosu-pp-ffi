@@ -1,14 +1,18 @@
 //! Performance calculator handle and configuration.
 //!
 //! Provides a builder-style interface for configuring and running performance
-//! (pp) calculations for osu! replays and scores.
+//! calculations.
 
-use std::{mem, ptr};
+use std::ptr;
 
-use rosu_pp::Performance;
+use rosu_pp::{any::HitResultPriority, Performance};
 
 use crate::{
-    attributes::PerformanceAttributes, beatmap::BeatmapHandle, error::FfiResult, mods::ModsHandle,
+    attributes::PerformanceAttributes,
+    beatmap::BeatmapHandle,
+    error::FfiResult,
+    handle::{HandleOwned, HandleRef},
+    mods::ModsHandle,
     score_state::ScoreState,
 };
 
@@ -17,14 +21,14 @@ use crate::{
 /// Created via `rosu_pp_performance_new`. Configure it with setter functions,
 /// then calculate with `rosu_pp_performance_calculate`.
 ///
-/// **Builder pattern:** Each setter consumes the handle internally (using
-/// `Box::from_raw` + `mem::forget`) and returns `FfiResult::Ok`. The handle
-/// pointer remains valid and can be used for subsequent setter calls.
+/// **Builder pattern:** Each setter consumes the handle internally and
+/// returns `FfiResult::Ok`. The handle pointer remains valid and can be
+/// used for subsequent setter calls.
 ///
 /// **Must be freed** with `rosu_pp_performance_free` when done.
-pub struct PerformanceHandle<'map> {
-    performance: Performance<'map>,
-}
+pub struct PerformanceHandle(Performance<'static>);
+
+handle!(PerformanceHandle -> Performance<'static>);
 
 /// Create a new performance calculator for the given beatmap.
 ///
@@ -37,18 +41,12 @@ pub struct PerformanceHandle<'map> {
 /// `rosu_pp_performance_free`. The `map` handle must remain valid for the
 /// lifetime of this `PerformanceHandle` (since it borrows the beatmap data).
 #[no_mangle]
-pub extern "C" fn rosu_pp_performance_new(
-    map: *const BeatmapHandle,
-) -> *mut PerformanceHandle<'static> {
-    if map.is_null() {
+pub extern "C" fn rosu_pp_performance_new(map: *const BeatmapHandle) -> *mut PerformanceHandle {
+    let Some(map) = map.checked_by_ref() else {
         return ptr::null_mut();
-    }
+    };
 
-    let map = unsafe { &(*map).beatmap };
-
-    Box::into_raw(Box::new(PerformanceHandle {
-        performance: Performance::new(map),
-    }))
+    Box::into_raw(Box::new(PerformanceHandle::from(Performance::new(map))))
 }
 
 /// Set the game mods for the performance calculation.
@@ -63,17 +61,14 @@ pub extern "C" fn rosu_pp_performance_new(
 /// **Handle reuse:** The `handle` remains valid after this call.
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_mods(
-    handle: *mut PerformanceHandle<'static>,
+    handle: *mut PerformanceHandle,
     mods: *const ModsHandle,
 ) -> FfiResult {
     if handle.is_null() {
         return FfiResult::NullPointer;
     }
 
-    let mut h = unsafe { Box::from_raw(handle) };
-    let mods = unsafe { &*mods };
-    h.performance = h.performance.mods(mods.mods.clone());
-    mem::forget(h);
+    handle.by_owned(|perf| perf.mods(mods.by_ref().to_owned()));
 
     FfiResult::Ok
 }
@@ -101,9 +96,7 @@ macro_rules! setter {
                 return FfiResult::NullPointer;
             }
 
-            let mut h = unsafe { Box::from_raw(handle) };
-            h.performance = h.performance.$arg( $arg $(, $args )* );
-            mem::forget(h);
+            handle.by_owned(|perf| perf.$arg( $arg $(, $args )* ));
 
             FfiResult::Ok
         }
@@ -111,43 +104,24 @@ macro_rules! setter {
 }
 
 setter!(rosu_pp_performance_passed_objects(passed_objects: u32));
-
 setter!(rosu_pp_performance_clock_rate(clock_rate: f64));
-
 setter!(rosu_pp_performance_ar(ar: f32, fixed: bool));
-
 setter!(rosu_pp_performance_cs(cs: f32, fixed: bool));
-
 setter!(rosu_pp_performance_hp(hp: f32, fixed: bool));
-
 setter!(rosu_pp_performance_od(od: f32, fixed: bool));
-
 setter!(rosu_pp_performance_hardrock_offsets(hardrock_offsets: bool));
-
 setter!(rosu_pp_performance_lazer(lazer: bool));
-
 setter!(rosu_pp_performance_accuracy(accuracy: f64));
-
 setter!(rosu_pp_performance_misses(misses: u32));
-
 setter!(rosu_pp_performance_combo(combo: u32));
-
 setter!(rosu_pp_performance_large_tick_hits(large_tick_hits: u32));
-
 setter!(rosu_pp_performance_small_tick_hits(small_tick_hits: u32));
-
 setter!(rosu_pp_performance_slider_end_hits(slider_end_hits: u32));
-
 setter!(rosu_pp_performance_n300(n300: u32));
-
 setter!(rosu_pp_performance_n100(n100: u32));
-
 setter!(rosu_pp_performance_n50(n50: u32));
-
 setter!(rosu_pp_performance_n_geki(n_geki: u32));
-
 setter!(rosu_pp_performance_n_katu(n_katu: u32));
-
 setter!(rosu_pp_performance_legacy_total_score(legacy_total_score: u32));
 
 /// Set the priority of hitresults when generating remaining hitresults.
@@ -163,21 +137,20 @@ setter!(rosu_pp_performance_legacy_total_score(legacy_total_score: u32));
 /// **Handle reuse:** The `handle` remains valid after this call.
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_hitresult_priority(
-    handle: *mut PerformanceHandle<'static>,
+    handle: *mut PerformanceHandle,
     priority: u32,
 ) -> FfiResult {
     if handle.is_null() {
         return FfiResult::NullPointer;
     }
 
-    let mut h = unsafe { Box::from_raw(handle) };
     let priority = match priority {
-        0 => rosu_pp::any::HitResultPriority::BestCase,
-        1 => rosu_pp::any::HitResultPriority::WorstCase,
+        0 => HitResultPriority::BestCase,
+        1 => HitResultPriority::WorstCase,
         _ => return FfiResult::InvalidArgument,
     };
-    h.performance = h.performance.hitresult_priority(priority);
-    mem::forget(h);
+
+    handle.by_owned(|perf| perf.hitresult_priority(priority));
 
     FfiResult::Ok
 }
@@ -203,22 +176,20 @@ pub extern "C" fn rosu_pp_performance_hitresult_priority(
 /// call `rosu_pp_performance_free` on the handle, nor use it after this call.
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_checked_calculate(
-    handle: *mut PerformanceHandle<'static>,
+    handle: *mut PerformanceHandle,
     out: *mut PerformanceAttributes,
 ) -> FfiResult {
     if handle.is_null() || out.is_null() {
         return FfiResult::NullPointer;
     }
 
-    let h = unsafe { Box::from_raw(handle) };
+    let Ok(attrs) = handle.into_owned().checked_calculate() else {
+        return FfiResult::TooSuspicious;
+    };
 
-    match h.performance.checked_calculate() {
-        Ok(attrs) => {
-            unsafe { *out = (&attrs).into() };
-            FfiResult::Ok
-        }
-        Err(_) => FfiResult::TooSuspicious,
-    }
+    unsafe { *out = (&attrs).into() };
+
+    FfiResult::Ok
 }
 
 /// Set the full score state at once.
@@ -234,16 +205,14 @@ pub extern "C" fn rosu_pp_performance_checked_calculate(
 /// `handle` is null.
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_state(
-    handle: *mut PerformanceHandle<'static>,
+    handle: *mut PerformanceHandle,
     state: &ScoreState,
 ) -> FfiResult {
     if handle.is_null() {
         return FfiResult::NullPointer;
     }
 
-    let mut h = unsafe { Box::from_raw(handle) };
-    h.performance = h.performance.state(state.into());
-    mem::forget(h);
+    handle.by_owned(|perf| perf.state(state.into()));
 
     FfiResult::Ok
 }
@@ -263,15 +232,14 @@ pub extern "C" fn rosu_pp_performance_state(
 /// call `rosu_pp_performance_free` on the handle, nor use it after this call.
 #[no_mangle]
 pub extern "C" fn rosu_pp_performance_calculate(
-    handle: *mut PerformanceHandle<'static>,
+    handle: *mut PerformanceHandle,
     out: *mut PerformanceAttributes,
 ) -> FfiResult {
     if handle.is_null() || out.is_null() {
         return FfiResult::NullPointer;
     }
 
-    let h = unsafe { Box::from_raw(handle) };
-    let attrs = h.performance.calculate();
+    let attrs = handle.into_owned().calculate();
     unsafe { *out = (&attrs).into() };
 
     FfiResult::Ok
@@ -286,8 +254,6 @@ pub extern "C" fn rosu_pp_performance_calculate(
 /// **Note:** Do NOT call this function if the handle was passed to
 /// `rosu_pp_performance_calculate` — that function consumes the handle.
 #[no_mangle]
-pub extern "C" fn rosu_pp_performance_free(handle: *mut PerformanceHandle<'static>) {
-    if !handle.is_null() {
-        unsafe { drop(Box::from_raw(handle)) };
-    }
+pub extern "C" fn rosu_pp_performance_free(handle: *mut PerformanceHandle) {
+    handle.drop_handle();
 }

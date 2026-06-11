@@ -1,15 +1,18 @@
-//! Gradual (per-frame) difficulty calculator.
+//! Gradual (per-object) difficulty calculator.
 //!
 //! Computes star ratings incrementally as each hit object is processed,
 //! enabling real-time difficulty progression tracking.
 
 use std::ptr;
 
-use rosu_pp::GradualDifficulty as RosuGradualDifficulty;
+use rosu_pp::GradualDifficulty;
 
 use crate::{
-    attributes::DifficultyAttributes, beatmap::BeatmapHandle, difficulty::DifficultyHandle,
+    attributes::DifficultyAttributes,
+    beatmap::BeatmapHandle,
+    difficulty::DifficultyHandle,
     error::FfiResult,
+    handle::{HandleMut, HandleOwned, HandleRef},
 };
 
 /// Opaque handle to a gradual difficulty calculator.
@@ -18,9 +21,9 @@ use crate::{
 /// using `rosu_pp_gradual_difficulty_next` until it returns `FfiResult::Done`.
 ///
 /// **Must be freed** with `rosu_pp_gradual_difficulty_free` when done.
-pub struct GradualDifficultyHandle {
-    pub(crate) gradual: RosuGradualDifficulty,
-}
+pub struct GradualDifficultyHandle(GradualDifficulty);
+
+handle!(GradualDifficultyHandle -> GradualDifficulty);
 
 /// Create a new gradual difficulty calculator.
 ///
@@ -46,11 +49,9 @@ pub extern "C" fn rosu_pp_gradual_difficulty_new(
         return ptr::null_mut();
     }
 
-    let difficulty = unsafe { Box::from_raw(difficulty) };
-    let map = unsafe { &(*map).beatmap };
-    let gradual = difficulty.difficulty.gradual_difficulty(map);
+    let gradual = difficulty.into_owned().gradual_difficulty(map.by_ref());
 
-    Box::into_raw(Box::new(GradualDifficultyHandle { gradual }))
+    Box::into_raw(Box::new(GradualDifficultyHandle::from(gradual)))
 }
 
 /// Process the next hit object and return incremental difficulty attributes.
@@ -78,9 +79,7 @@ pub extern "C" fn rosu_pp_gradual_difficulty_next(
         return FfiResult::NullPointer;
     }
 
-    let h = unsafe { &mut *handle };
-
-    let Some(attrs) = h.gradual.next() else {
+    let Some(attrs) = handle.by_mut().next() else {
         return FfiResult::Done;
     };
 
@@ -96,7 +95,5 @@ pub extern "C" fn rosu_pp_gradual_difficulty_next(
 ///   null (null is a no-op).
 #[no_mangle]
 pub extern "C" fn rosu_pp_gradual_difficulty_free(handle: *mut GradualDifficultyHandle) {
-    if !handle.is_null() {
-        unsafe { drop(Box::from_raw(handle)) };
-    }
+    handle.drop_handle();
 }

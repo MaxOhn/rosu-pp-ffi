@@ -7,15 +7,18 @@ use std::{ffi, ptr, slice};
 
 use rosu_pp::{model::mode::GameMode, Beatmap};
 
-use crate::error::FfiResult;
+use crate::{
+    error::FfiResult,
+    handle::{HandleOwned, HandleRef},
+};
 
 /// Opaque handle to a loaded osu! beatmap.
 ///
 /// Created via `rosu_pp_beatmap_from_path` or `rosu_pp_beatmap_from_bytes`.
 /// Must be freed with `rosu_pp_beatmap_free` when no longer needed.
-pub struct BeatmapHandle {
-    pub(crate) beatmap: Beatmap,
-}
+pub struct BeatmapHandle(Beatmap);
+
+handle!(BeatmapHandle -> Beatmap);
 
 /// Load a beatmap from a file path.
 ///
@@ -46,7 +49,7 @@ pub extern "C" fn rosu_pp_beatmap_from_path(path: *const ffi::c_char) -> *mut Be
         Err(_) => return ptr::null_mut(),
     };
 
-    Box::into_raw(Box::new(BeatmapHandle { beatmap }))
+    Box::into_raw(Box::new(BeatmapHandle::from(beatmap)))
 }
 
 /// Load a beatmap from raw bytes.
@@ -75,7 +78,7 @@ pub extern "C" fn rosu_pp_beatmap_from_bytes(bytes: *const u8, len: usize) -> *m
         Err(_) => return ptr::null_mut(),
     };
 
-    Box::into_raw(Box::new(BeatmapHandle { beatmap }))
+    Box::into_raw(Box::new(BeatmapHandle::from(beatmap)))
 }
 
 macro_rules! getter {
@@ -92,7 +95,7 @@ macro_rules! getter {
                 return <$ty>::default();
             }
 
-            unsafe { (*handle).beatmap.$field }
+            handle.by_ref().$field
         }
     };
     ( $fn:ident( $expr:expr ) -> $ty:ty ) => {
@@ -108,7 +111,7 @@ macro_rules! getter {
                 return <$ty>::default();
             }
 
-            unsafe { ($expr)(&(*handle).beatmap) }
+            ($expr)(handle.by_ref())
         }
     };
 }
@@ -150,9 +153,7 @@ pub extern "C" fn rosu_pp_beatmap_check_suspicion(handle: *const BeatmapHandle) 
         return FfiResult::NullPointer;
     }
 
-    let map = unsafe { &(*handle).beatmap };
-
-    match map.check_suspicion() {
+    match handle.by_ref().check_suspicion() {
         Ok(()) => FfiResult::Ok,
         Err(_) => FfiResult::TooSuspicious,
     }
@@ -167,7 +168,5 @@ pub extern "C" fn rosu_pp_beatmap_check_suspicion(handle: *const BeatmapHandle) 
 /// After calling this function, the handle must NOT be used again.
 #[no_mangle]
 pub extern "C" fn rosu_pp_beatmap_free(handle: *mut BeatmapHandle) {
-    if !handle.is_null() {
-        unsafe { drop(Box::from_raw(handle)) };
-    }
+    handle.drop_handle();
 }

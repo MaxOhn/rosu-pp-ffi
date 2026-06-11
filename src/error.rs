@@ -24,6 +24,7 @@ pub enum FfiResult {
     NullPointer = 3,
     InvalidArgument = 4,
     TooSuspicious = 5,
+    None = 6,
 }
 
 impl fmt::Display for FfiResult {
@@ -35,6 +36,7 @@ impl fmt::Display for FfiResult {
             FfiResult::NullPointer => f.write_str("Null pointer received"),
             FfiResult::InvalidArgument => f.write_str("Invalid argument"),
             FfiResult::TooSuspicious => f.write_str("Beatmap is too suspicious"),
+            FfiResult::None => f.write_str("No value"),
         }
     }
 }
