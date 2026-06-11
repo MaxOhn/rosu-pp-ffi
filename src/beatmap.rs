@@ -5,7 +5,7 @@
 
 use std::{ffi, ptr, slice};
 
-use rosu_pp::{model::mode::GameMode, Beatmap};
+use rosu_pp::Beatmap;
 
 use crate::{
     error::FfiResult,
@@ -117,7 +117,7 @@ macro_rules! getter {
 }
 
 getter!(rosu_pp_beatmap_version(version) -> i32);
-getter!(rosu_pp_beatmap_mode(|map: &Beatmap| GameMode::from(map.mode) as i32) -> i32);
+getter!(rosu_pp_beatmap_mode(|map: &Beatmap| map.mode as i32) -> i32);
 getter!(rosu_pp_beatmap_ar(ar) -> f32);
 getter!(rosu_pp_beatmap_cs(cs) -> f32);
 getter!(rosu_pp_beatmap_hp(hp) -> f32);

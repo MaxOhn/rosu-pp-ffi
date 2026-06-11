@@ -8,7 +8,7 @@ use std::ptr;
 use rosu_pp::{any::HitResultPriority, Performance};
 
 use crate::{
-    attributes::PerformanceAttributes,
+    attributes::performance::PerformanceAttributes,
     beatmap::BeatmapHandle,
     error::FfiResult,
     handle::{HandleOwned, HandleRef},

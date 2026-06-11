@@ -8,7 +8,7 @@ use std::ptr;
 use rosu_pp::GradualPerformance;
 
 use crate::{
-    attributes::PerformanceAttributes,
+    attributes::performance::PerformanceAttributes,
     beatmap::BeatmapHandle,
     difficulty::DifficultyHandle,
     error::FfiResult,

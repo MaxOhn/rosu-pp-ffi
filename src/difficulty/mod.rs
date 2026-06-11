@@ -11,7 +11,7 @@ use std::ptr;
 use rosu_pp::Difficulty;
 
 use crate::{
-    attributes::DifficultyAttributes,
+    attributes::difficulty::DifficultyAttributes,
     beatmap::BeatmapHandle,
     error::FfiResult,
     handle::{HandleOwned, HandleRef},

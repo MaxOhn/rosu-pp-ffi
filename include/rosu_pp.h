@@ -46,6 +46,26 @@ typedef enum rosu_pp_GameMode {
 } rosu_pp_GameMode;
 
 /**
+ * Opaque handle to a `BeatmapAttributesBuilder`.
+ *
+ * Created via `rosu_pp_beatmap_attrs_builder_new`. Configure it with setter
+ * functions, then build with `rosu_pp_beatmap_attrs_builder_build`.
+ *
+ * **Must be freed** with `rosu_pp_beatmap_attrs_builder_free` when done.
+ */
+typedef struct rosu_pp_BeatmapAttributesBuilderHandle rosu_pp_BeatmapAttributesBuilderHandle;
+
+/**
+ * Opaque handle to a `BeatmapAttributes` result.
+ *
+ * Created via `rosu_pp_beatmap_attrs_builder_build`. Query it with getter
+ * functions and `rosu_pp_beatmap_attrs_hit_windows`.
+ *
+ * **Must be freed** with `rosu_pp_beatmap_attrs_free` when done.
+ */
+typedef struct rosu_pp_BeatmapAttributesHandle rosu_pp_BeatmapAttributesHandle;
+
+/**
  * Opaque handle to a loaded osu! beatmap.
  *
  * Created via `rosu_pp_beatmap_from_path` or `rosu_pp_beatmap_from_bytes`.
@@ -116,6 +136,65 @@ typedef struct rosu_pp_ModsHandle rosu_pp_ModsHandle;
  * **Must be freed** with `rosu_pp_performance_free` when done.
  */
 typedef struct rosu_pp_PerformanceHandle rosu_pp_PerformanceHandle;
+
+/**
+ * AR and OD hit windows for a beatmap.
+ *
+ * Fields populated depend on the game mode:
+ * - **osu! (0):** `ar`, `od_great`, `od_ok`, `od_meh`
+ * - **taiko (1):** `od_great`, `od_ok`
+ * - **catch (2):** `ar`
+ * - **mania (3):** `od_perfect`, `od_great`, `od_good`, `od_ok`, `od_meh`
+ */
+typedef struct rosu_pp_HitWindows {
+    /**
+     * Hit window for approach rate (AR) in milliseconds.
+     * Only available for osu! and catch.
+     */
+    double ar;
+    /**
+     * Perfect hit window (mania only).
+     */
+    double od_perfect;
+    /**
+     * Great hit window for OD (osu!, taiko, mania).
+     */
+    double od_great;
+    /**
+     * Good hit window (mania only).
+     */
+    double od_good;
+    /**
+     * Ok hit window for OD (osu!, taiko, mania).
+     */
+    double od_ok;
+    /**
+     * Meh hit window (osu!, mania only).
+     */
+    double od_meh;
+} rosu_pp_HitWindows;
+
+/**
+ * Adjusted beatmap attributes with clock rate applied to AR and OD.
+ */
+typedef struct rosu_pp_AdjustedBeatmapAttributes {
+    /**
+     * Approach rate adjusted for clock rate.
+     */
+    double ar;
+    /**
+     * Circle size (not affected by clock rate).
+     */
+    float cs;
+    /**
+     * HP drain rate (not affected by clock rate).
+     */
+    float hp;
+    /**
+     * Overall difficulty adjusted for clock rate.
+     */
+    double od;
+} rosu_pp_AdjustedBeatmapAttributes;
 
 /**
  * Unified difficulty attributes for all osu! game modes.
@@ -510,6 +589,295 @@ typedef struct rosu_pp_PerformanceAttributes {
      */
     struct rosu_pp_DifficultyAttributes difficulty;
 } rosu_pp_PerformanceAttributes;
+
+/**
+ * Get the approach rate from the beatmap attributes.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+ *
+ * **Returns:** The approach rate value, or `0.0` if `handle` is null.
+ */
+float rosu_pp_beatmap_attrs_ar(const struct rosu_pp_BeatmapAttributesHandle *handle);
+
+/**
+ * Get the overall difficulty from the beatmap attributes.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+ *
+ * **Returns:** The overall difficulty value, or `0.0` if `handle` is null.
+ */
+float rosu_pp_beatmap_attrs_od(const struct rosu_pp_BeatmapAttributesHandle *handle);
+
+/**
+ * Get the circle size from the beatmap attributes.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+ *
+ * **Returns:** The circle size value, or `0.0` if `handle` is null.
+ */
+float rosu_pp_beatmap_attrs_cs(const struct rosu_pp_BeatmapAttributesHandle *handle);
+
+/**
+ * Get the HP drain rate from the beatmap attributes.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+ *
+ * **Returns:** The HP drain rate value, or `0.0` if `handle` is null.
+ */
+float rosu_pp_beatmap_attrs_hp(const struct rosu_pp_BeatmapAttributesHandle *handle);
+
+/**
+ * Get the clock rate from the beatmap attributes.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+ *
+ * **Returns:** The clock rate value, or `0.0` if `handle` is null.
+ */
+double rosu_pp_beatmap_attrs_clock_rate(const struct rosu_pp_BeatmapAttributesHandle *handle);
+
+/**
+ * Calculate the AR and OD hit windows for the beatmap attributes.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+ * - `out`: Pointer to a `HitWindows` struct where results will be written
+ *   (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` or `out` is null.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_hit_windows(const struct rosu_pp_BeatmapAttributesHandle *handle,
+                                                         struct rosu_pp_HitWindows *out);
+
+/**
+ * Free a beatmap attributes handle and release its memory.
+ *
+ * **Parameters:**
+ * - `handle`: A handle returned by `rosu_pp_beatmap_attrs_builder_build`.
+ *   May be null (null is a no-op).
+ *
+ * After calling this function, the handle must NOT be used again.
+ */
+void rosu_pp_beatmap_attrs_free(struct rosu_pp_BeatmapAttributesHandle *handle);
+
+/**
+ * Apply the clock rate to get adjusted AR and OD values.
+ *
+ * The returned struct has AR and OD adjusted for the clock rate, while CS
+ * and HP remain unchanged (they are not affected by clock rate).
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+ * - `out`: Pointer to an `AdjustedBeatmapAttributes` struct where results
+ *   will be written (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` or `out` is null.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_apply_clock_rate(const struct rosu_pp_BeatmapAttributesHandle *handle,
+                                                              struct rosu_pp_AdjustedBeatmapAttributes *out);
+
+/**
+ * Create a new beatmap attributes builder with default settings.
+ *
+ * **Returns:** A non-null handle to a new `BeatmapAttributesBuilder`.
+ *
+ * **Memory:** The caller owns the returned handle and must free it with
+ * `rosu_pp_beatmap_attrs_builder_free`.
+ */
+struct rosu_pp_BeatmapAttributesBuilderHandle *rosu_pp_beatmap_attrs_builder_new(void);
+
+/**
+ * Populate the builder from a beatmap's attributes (AR, OD, CS, HP, mode,
+ * convert status).
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+ * - `map`: A valid `BeatmapHandle` pointer (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * either pointer is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call. Individual
+ * setters (ar, od, cs, hp) can be called after `map` to override specific
+ * values.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_map(struct rosu_pp_BeatmapAttributesBuilderHandle *handle,
+                                                         const struct rosu_pp_BeatmapHandle *map);
+
+/**
+ * Override the approach rate.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+ * - `ar`: The approach rate value.
+ * - `fixed`: If `true`, the value is used as-is with no mod/clock-rate
+ *   adjustment. If `false`, the value may be adjusted by mods and clock rate.
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_ar(struct rosu_pp_BeatmapAttributesBuilderHandle *handle,
+                                                        float ar,
+                                                        bool fixed);
+
+/**
+ * Override the overall difficulty.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+ * - `od`: The overall difficulty value.
+ * - `fixed`: If `true`, the value is used as-is with no mod/clock-rate
+ *   adjustment. If `false`, the value may be adjusted by mods and clock rate.
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_od(struct rosu_pp_BeatmapAttributesBuilderHandle *handle,
+                                                        float od,
+                                                        bool fixed);
+
+/**
+ * Override the circle size.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+ * - `cs`: The circle size value.
+ * - `fixed`: If `true`, the value is used as-is with no mod/clock-rate
+ *   adjustment. If `false`, the value may be adjusted by mods and clock rate.
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_cs(struct rosu_pp_BeatmapAttributesBuilderHandle *handle,
+                                                        float cs,
+                                                        bool fixed);
+
+/**
+ * Override the HP drain rate.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+ * - `hp`: The HP drain rate value.
+ * - `fixed`: If `true`, the value is used as-is with no mod/clock-rate
+ *   adjustment. If `false`, the value may be adjusted by mods and clock rate.
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_hp(struct rosu_pp_BeatmapAttributesBuilderHandle *handle,
+                                                        float hp,
+                                                        bool fixed);
+
+/**
+ * Set the game mods for the beatmap attributes calculation.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+ * - `mods`: A `ModsHandle` pointer containing the mods to apply.
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_mods(struct rosu_pp_BeatmapAttributesBuilderHandle *handle,
+                                                          const struct rosu_pp_ModsHandle *mods);
+
+/**
+ * Set a custom clock rate.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+ * - `clock_rate`: The clock rate value.
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_clock_rate(struct rosu_pp_BeatmapAttributesBuilderHandle *handle,
+                                                                double clock_rate);
+
+/**
+ * Set the game mode and convert status.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+ * - `mode`: The game mode.
+ * - `is_convert`: Whether this is a converted map.
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_mode(struct rosu_pp_BeatmapAttributesBuilderHandle *handle,
+                                                          enum rosu_pp_GameMode mode,
+                                                          bool is_convert);
+
+/**
+ * Populate the builder from a difficulty calculator's settings.
+ *
+ * Copies the map difficulty attributes (AR, OD, CS, HP), mods, and clock
+ * rate from the difficulty calculator.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+ * - `difficulty`: A valid `DifficultyHandle` pointer (must not be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * either pointer is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_difficulty(struct rosu_pp_BeatmapAttributesBuilderHandle *handle,
+                                                                const struct rosu_pp_DifficultyHandle *difficulty);
+
+/**
+ * Build the `BeatmapAttributes` from the configured builder.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer. **Consumed**
+ *   by this call. The handle must NOT be used or freed after this call.
+ *
+ * **Returns:** A non-null `BeatmapAttributesHandle` on success, or `NULL` if
+ * `handle` is null.
+ *
+ * **Ownership:** This function **consumes** the `handle`. The caller must NOT
+ * call `rosu_pp_beatmap_attrs_free` on the builder handle, nor use it after
+ * this call.
+ *
+ * **Memory:** The caller owns the returned handle and must free it with
+ * `rosu_pp_beatmap_attrs_free`.
+ */
+struct rosu_pp_BeatmapAttributesHandle *rosu_pp_beatmap_attrs_builder_build(struct rosu_pp_BeatmapAttributesBuilderHandle *handle);
+
+/**
+ * Free a beatmap attributes builder handle and release its memory.
+ *
+ * **Parameters:**
+ * - `handle`: A handle returned by `rosu_pp_beatmap_attrs_builder_new`.
+ *   May be null (null is a no-op).
+ *
+ * **Note:** Do NOT call this function if the handle was passed to
+ * `rosu_pp_beatmap_attrs_builder_build` — that function consumes the
+ * builder handle.
+ */
+void rosu_pp_beatmap_attrs_builder_free(struct rosu_pp_BeatmapAttributesBuilderHandle *handle);
 
 /**
  * Load a beatmap from a file path.

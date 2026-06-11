@@ -36,13 +36,13 @@ pub trait HandleRef {
 
     fn checked_by_ref(self) -> Option<&'static Self::InnerRef>;
 
-    fn by_ref(self) -> &'static Self::InnerRef;
+    fn by_ref<'a>(self) -> &'a Self::InnerRef;
 }
 
 pub trait HandleMut {
     type InnerMut;
 
-    fn by_mut(self) -> &'static mut Self::InnerMut;
+    fn by_mut<'a>(self) -> &'a mut Self::InnerMut;
 }
 
 pub trait HandleOwned: Sized {
@@ -64,16 +64,16 @@ impl<H: Handle> HandleRef for *const H {
         unsafe { self.cast::<Self::InnerRef>().as_ref() }
     }
 
-    fn by_ref(self) -> &'static Self::InnerRef {
-        unsafe { self.cast::<Self::InnerRef>().as_ref_unchecked() }
+    fn by_ref<'a>(self) -> &'a Self::InnerRef {
+        unsafe { &*self.cast::<Self::InnerRef>() }
     }
 }
 
 impl<H: Handle> HandleMut for *mut H {
     type InnerMut = H::Inner;
 
-    fn by_mut(self) -> &'static mut Self::InnerMut {
-        unsafe { self.cast::<Self::InnerMut>().as_mut_unchecked() }
+    fn by_mut<'a>(self) -> &'a mut Self::InnerMut {
+        unsafe { &mut *self.cast::<Self::InnerMut>() }
     }
 }
 
