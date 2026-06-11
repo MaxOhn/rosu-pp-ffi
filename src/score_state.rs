@@ -4,7 +4,8 @@
 //! in performance and gradual performance calculations.
 
 use rosu_pp::any::ScoreState as RosuScoreState;
-use rosu_map::section::general::GameMode as RosuMapGameMode;
+
+use crate::mode::GameMode;
 
 /// Hit result counts and score composition for a single play.
 ///
@@ -122,28 +123,21 @@ pub extern "C" fn rosu_pp_score_state_new() -> ScoreState {
 ///
 /// **Returns:** The total number of hits, or 0 if `state` is null.
 #[no_mangle]
-pub extern "C" fn rosu_pp_score_state_total_hits(state: *const ScoreState, mode: i32) -> u32 {
+pub extern "C" fn rosu_pp_score_state_total_hits(state: *const ScoreState, mode: GameMode) -> u32 {
     if state.is_null() {
         return 0;
     }
 
     let s = unsafe { &*state };
-    let mode = match mode {
-        0 => RosuMapGameMode::Osu,
-        1 => RosuMapGameMode::Taiko,
-        2 => RosuMapGameMode::Catch,
-        3 => RosuMapGameMode::Mania,
-        _ => return 0,
-    };
 
     let mut amount = s.n300 + s.n100 + s.misses;
 
-    if mode != RosuMapGameMode::Taiko {
+    if mode != GameMode::Taiko {
         amount += s.n50;
 
-        if mode != RosuMapGameMode::Osu {
+        if mode != GameMode::Osu {
             amount += s.n_katu;
-            amount += u32::from(mode != RosuMapGameMode::Catch) * s.n_geki;
+            amount += u32::from(mode != GameMode::Catch) * s.n_geki;
         }
     }
 

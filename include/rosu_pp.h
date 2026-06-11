@@ -10,13 +10,13 @@
  * Return code for FFI functions that can fail.
  *
  * Variants:
- * - `Ok` — Operation succeeded.
- * - `Done` — Gradual calculator has processed all objects (only returned by
+ * - `Ok` -- Operation succeeded.
+ * - `Done` -- Gradual calculator has processed all objects (only returned by
  *   `rosu_pp_gradual_performance_next` and `rosu_pp_gradual_difficulty_next`).
- * - `ParseError` — Input string could not be parsed (beatmap parsing, mod parsing).
- * - `NullPointer` — A null pointer was passed where a valid handle was expected.
- * - `InvalidArgument` — An argument value was out of range or otherwise invalid.
- * - `TooSuspicious` — The beatmap contains suspicious hit objects that make
+ * - `ParseError` -- Input string could not be parsed (beatmap parsing, mod parsing).
+ * - `NullPointer` -- A null pointer was passed where a valid handle was expected.
+ * - `InvalidArgument` -- An argument value was out of range or otherwise invalid.
+ * - `TooSuspicious` -- The beatmap contains suspicious hit objects that make
  *   calculation unreliable (only returned by `checked_*` functions).
  */
 typedef enum rosu_pp_FfiResult {
@@ -1490,6 +1490,7 @@ struct rosu_pp_ScoreState rosu_pp_score_state_new(void);
  *
  * **Returns:** The total number of hits, or 0 if `state` is null.
  */
-uint32_t rosu_pp_score_state_total_hits(const struct rosu_pp_ScoreState *state, int32_t mode);
+uint32_t rosu_pp_score_state_total_hits(const struct rosu_pp_ScoreState *state,
+                                        enum rosu_pp_GameMode mode);
 
 void rosu_pp_strains_free(struct rosu_pp_StrainsData *handle);

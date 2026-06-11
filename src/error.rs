@@ -8,13 +8,13 @@ use std::fmt;
 /// Return code for FFI functions that can fail.
 ///
 /// Variants:
-/// - `Ok` — Operation succeeded.
-/// - `Done` — Gradual calculator has processed all objects (only returned by
+/// - `Ok` -- Operation succeeded.
+/// - `Done` -- Gradual calculator has processed all objects (only returned by
 ///   `rosu_pp_gradual_performance_next` and `rosu_pp_gradual_difficulty_next`).
-/// - `ParseError` — Input string could not be parsed (beatmap parsing, mod parsing).
-/// - `NullPointer` — A null pointer was passed where a valid handle was expected.
-/// - `InvalidArgument` — An argument value was out of range or otherwise invalid.
-/// - `TooSuspicious` — The beatmap contains suspicious hit objects that make
+/// - `ParseError` -- Input string could not be parsed (beatmap parsing, mod parsing).
+/// - `NullPointer` -- A null pointer was passed where a valid handle was expected.
+/// - `InvalidArgument` -- An argument value was out of range or otherwise invalid.
+/// - `TooSuspicious` -- The beatmap contains suspicious hit objects that make
 ///   calculation unreliable (only returned by `checked_*` functions).
 #[repr(C)]
 pub enum FfiResult {
