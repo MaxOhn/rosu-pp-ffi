@@ -1,0 +1,13 @@
+pragma_once = true
+usize_is_size_t = true
+documentation = true
+documentation_length = "full"
+
+[c]
+style = "both"
+
+[enum]
+prefix_with_name = true
+
+[header.rosu_pp_ffi]
+include_guard = "ROSU_PP_H"

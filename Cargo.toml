@@ -12,6 +12,3 @@ rosu-map = { version = "0.2.1"}
 rosu-mods = { version = "0.4.0", features = ["serde"] }
 serde = { version = "1" }
 serde_json = { version = "1" }
-
-[build-dependencies]
-cbindgen = { version = "0.28" }
