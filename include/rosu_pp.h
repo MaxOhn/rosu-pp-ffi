@@ -1274,7 +1274,7 @@ enum rosu_pp_FfiResult rosu_pp_mode_from_str(const char *s, enum rosu_pp_GameMod
 enum rosu_pp_FfiResult rosu_pp_mods_parse_with_mode(const char *s,
                                                     bool deny_unknown_fields,
                                                     enum rosu_pp_GameMode mode,
-                                                    struct rosu_pp_ModsHandle *out);
+                                                    struct rosu_pp_ModsHandle **out);
 
 /**
  * Parse a mod string with automatic mode detection.
@@ -1296,7 +1296,7 @@ enum rosu_pp_FfiResult rosu_pp_mods_parse_with_mode(const char *s,
  */
 enum rosu_pp_FfiResult rosu_pp_mods_parse(const char *s,
                                           bool deny_unknown_fields,
-                                          struct rosu_pp_ModsHandle *out);
+                                          struct rosu_pp_ModsHandle **out);
 
 /**
  * Create a mods handle from legacy bitflags.

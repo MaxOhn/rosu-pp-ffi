@@ -17,6 +17,7 @@ use std::fmt;
 /// - `TooSuspicious` -- The beatmap contains suspicious hit objects that make
 ///   calculation unreliable (only returned by `checked_*` functions).
 #[repr(C)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum FfiResult {
     Ok = 0,
     Done = 1,

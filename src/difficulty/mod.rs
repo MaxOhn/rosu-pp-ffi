@@ -4,7 +4,7 @@
 //! calculations. Each setter returns `FfiResult::Ok` and the handle remains
 //! valid for further configuration.
 
-mod inspect;
+pub mod inspect;
 
 use std::ptr;
 
@@ -100,7 +100,8 @@ macro_rules! setter {
         /// **Parameters:**
         /// - `handle`: A valid `DifficultyHandle` pointer (must not be null).
         /// - `$arg`: The primary parameter value.
-        /// $(, `$args`): Additional parameter values.
+        // TODO: improve macro stuff
+        // $(, `$args`): Additional parameter values.
         ///
         /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
         /// if `handle` is null.

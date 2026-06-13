@@ -154,6 +154,10 @@ impl StrainsData {
 
 #[no_mangle]
 pub extern "C" fn rosu_pp_strains_free(handle: *mut StrainsData) {
+    if handle.is_null() {
+        return;
+    }
+
     let StrainsData {
         mode: _,
         section_len: _,
@@ -174,7 +178,8 @@ pub extern "C" fn rosu_pp_strains_free(handle: *mut StrainsData) {
     macro_rules! drop {
         ($ptr:ident) => {
             if !(*$ptr).is_null() {
-                drop(unsafe { Box::from_raw(ptr::slice_from_raw_parts_mut($ptr, *len)) });
+                let slice = ptr::slice_from_raw_parts_mut((*$ptr).cast_mut(), *len);
+                drop(unsafe { Box::from_raw(slice) });
             }
         };
     }

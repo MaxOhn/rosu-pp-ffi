@@ -80,7 +80,8 @@ macro_rules! setter {
         /// **Parameters:**
         /// - `handle`: A valid `PerformanceHandle` pointer (must not be null).
         /// - `$arg`: The primary parameter value.
-        /// $(, `$args`): Additional parameter values.
+        // TODO: improve macro stuff
+        // $(, `$args`): Additional parameter values.
         ///
         /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
         /// if `handle` is null.

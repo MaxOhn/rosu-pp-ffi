@@ -4,7 +4,7 @@
 //! `"{"acronym":"HDFL","settings":{}}"`) and convert between mod
 //! representations (bitflags, strings, etc.).
 
-use std::{error, ffi, fmt};
+use std::{error, ffi, fmt, ptr};
 
 use rosu_mods::{serde::GameModsSeed, GameModsLegacy};
 use rosu_pp::GameMods;
@@ -24,7 +24,7 @@ pub struct ModsHandle(GameMods);
 
 handle!(ModsHandle -> GameMods);
 
-fn parse_mods(s: *const ffi::c_char, seed: GameModsSeed, out: *mut ModsHandle) -> FfiResult {
+fn parse_mods(s: *const ffi::c_char, seed: GameModsSeed, out: *mut *mut ModsHandle) -> FfiResult {
     #[derive(Debug)]
     struct SerdeError;
 
@@ -58,7 +58,7 @@ fn parse_mods(s: *const ffi::c_char, seed: GameModsSeed, out: *mut ModsHandle) -
         return FfiResult::ParseError;
     };
 
-    unsafe { *out = ModsHandle::from(GameMods::from(mods)) };
+    unsafe { *out = Box::into_raw(Box::new(ModsHandle::from(GameMods::from(mods)))) };
 
     FfiResult::Ok
 }
@@ -87,7 +87,7 @@ pub extern "C" fn rosu_pp_mods_parse_with_mode(
     s: *const ffi::c_char,
     deny_unknown_fields: bool,
     mode: GameMode,
-    out: *mut ModsHandle,
+    out: *mut *mut ModsHandle,
 ) -> FfiResult {
     let seed = GameModsSeed::Mode {
         mode: mode.into(),
@@ -117,7 +117,7 @@ pub extern "C" fn rosu_pp_mods_parse_with_mode(
 pub extern "C" fn rosu_pp_mods_parse(
     s: *const ffi::c_char,
     deny_unknown_fields: bool,
-    out: *mut ModsHandle,
+    out: *mut *mut ModsHandle,
 ) -> FfiResult {
     let seed = GameModsSeed::SameModeForEachMod {
         deny_unknown_fields,
@@ -173,6 +173,10 @@ pub extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
 /// `rosu_pp_mods_free_string`. Do NOT use standard `free()` on this pointer.
 #[no_mangle]
 pub extern "C" fn rosu_pp_mods_to_string(mods: *const ModsHandle) -> *mut ffi::c_char {
+    if mods.is_null() {
+        return ptr::null_mut();
+    }
+
     let s = match mods.by_ref() {
         GameMods::Lazer(mods) => mods.to_string(),
         GameMods::Intermode(mods) => mods.to_string(),
