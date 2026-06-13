@@ -152,7 +152,7 @@ impl StrainsData {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_strains_free(handle: *mut StrainsData) {
     if handle.is_null() {
         return;

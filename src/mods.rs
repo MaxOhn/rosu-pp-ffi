@@ -6,9 +6,9 @@
 
 use std::{error, ffi, fmt, ptr};
 
-use rosu_mods::{serde::GameModsSeed, GameModsLegacy};
+use rosu_mods::{GameModsLegacy, serde::GameModsSeed};
 use rosu_pp::GameMods;
-use serde::de::{value::StrDeserializer, DeserializeSeed, IntoDeserializer};
+use serde::de::{DeserializeSeed, IntoDeserializer, value::StrDeserializer};
 
 use crate::{
     error::FfiResult,
@@ -82,7 +82,7 @@ fn parse_mods(s: *const ffi::c_char, seed: GameModsSeed, out: *mut *mut ModsHand
 ///
 /// **Memory:** The caller owns the handle written to `out` and must free it with
 /// `rosu_pp_mods_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mods_parse_with_mode(
     s: *const ffi::c_char,
     deny_unknown_fields: bool,
@@ -113,7 +113,7 @@ pub extern "C" fn rosu_pp_mods_parse_with_mode(
 ///
 /// **Memory:** The caller owns the handle written to `out` and must free it with
 /// `rosu_pp_mods_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mods_parse(
     s: *const ffi::c_char,
     deny_unknown_fields: bool,
@@ -138,7 +138,7 @@ pub extern "C" fn rosu_pp_mods_parse(
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_mods_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
     let mods = GameModsLegacy::from_bits(bits);
 
@@ -151,7 +151,7 @@ pub extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
 /// - `mods`: A valid `ModsHandle` pointer (must not be null).
 ///
 /// **Returns:** A u32 bitflag value representing the mods, or 0 if `mods` is null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
     match mods.by_ref() {
         GameMods::Lazer(mods) => mods.bits(),
@@ -171,7 +171,7 @@ pub extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
 ///
 /// **Memory:** The caller **owns** the returned string and must free it using
 /// `rosu_pp_mods_free_string`. Do NOT use standard `free()` on this pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mods_to_string(mods: *const ModsHandle) -> *mut ffi::c_char {
     if mods.is_null() {
         return ptr::null_mut();
@@ -194,7 +194,7 @@ pub extern "C" fn rosu_pp_mods_to_string(mods: *const ModsHandle) -> *mut ffi::c
 ///
 /// **Note:** This is the ONLY correct way to free strings from `mods_to_string`.
 /// Do NOT use standard C `free()` on this pointer.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mods_free_string(s: *mut ffi::c_char) {
     if !s.is_null() {
         unsafe { drop(ffi::CString::from_raw(s)) };
@@ -207,7 +207,7 @@ pub extern "C" fn rosu_pp_mods_free_string(s: *mut ffi::c_char) {
 /// - `handle`: A handle returned by `rosu_pp_mods_parse`,
 ///   `rosu_pp_mods_parse_with_mode`, or `rosu_pp_mods_from_bits`.
 ///   May be null (null is a no-op).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mods_free(handle: *mut ModsHandle) {
     handle.drop_handle();
 }

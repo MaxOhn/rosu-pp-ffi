@@ -38,7 +38,7 @@ impl From<RosuAdjustedBeatmapAttributes> for AdjustedBeatmapAttributes {
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` or `out` is null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_apply_clock_rate(
     handle: *const BeatmapAttributesHandle,
     out: *mut AdjustedBeatmapAttributes,

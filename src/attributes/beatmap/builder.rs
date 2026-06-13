@@ -28,7 +28,7 @@ handle!(BeatmapAttributesBuilderHandle -> BeatmapAttributesBuilder);
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_beatmap_attrs_builder_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_new() -> *mut BeatmapAttributesBuilderHandle {
     Box::into_raw(Box::new(BeatmapAttributesBuilderHandle::from(
         BeatmapAttributesBuilder::new(),
@@ -48,7 +48,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_new() -> *mut BeatmapAttributesB
 /// **Handle reuse:** The `handle` remains valid after this call. Individual
 /// setters (ar, od, cs, hp) can be called after `map` to override specific
 /// values.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_map(
     handle: *mut BeatmapAttributesBuilderHandle,
     map: *const BeatmapHandle,
@@ -74,7 +74,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_map(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_ar(
     handle: *mut BeatmapAttributesBuilderHandle,
     ar: f32,
@@ -101,7 +101,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_ar(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_od(
     handle: *mut BeatmapAttributesBuilderHandle,
     od: f32,
@@ -128,7 +128,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_od(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_cs(
     handle: *mut BeatmapAttributesBuilderHandle,
     cs: f32,
@@ -155,7 +155,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_cs(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_hp(
     handle: *mut BeatmapAttributesBuilderHandle,
     hp: f32,
@@ -180,7 +180,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_hp(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_mods(
     handle: *mut BeatmapAttributesBuilderHandle,
     mods: *const ModsHandle,
@@ -204,7 +204,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_mods(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_clock_rate(
     handle: *mut BeatmapAttributesBuilderHandle,
     clock_rate: f64,
@@ -229,7 +229,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_clock_rate(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_mode(
     handle: *mut BeatmapAttributesBuilderHandle,
     mode: GameMode,
@@ -257,7 +257,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_mode(
 /// either pointer is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_difficulty(
     handle: *mut BeatmapAttributesBuilderHandle,
     difficulty: *const DifficultyHandle,
@@ -286,7 +286,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_difficulty(
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_beatmap_attrs_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_build(
     handle: *mut BeatmapAttributesBuilderHandle,
 ) -> *mut BeatmapAttributesHandle {
@@ -308,7 +308,7 @@ pub extern "C" fn rosu_pp_beatmap_attrs_builder_build(
 /// **Note:** Do NOT call this function if the handle was passed to
 /// `rosu_pp_beatmap_attrs_builder_build` — that function consumes the
 /// builder handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_attrs_builder_free(handle: *mut BeatmapAttributesBuilderHandle) {
     handle.drop_handle();
 }

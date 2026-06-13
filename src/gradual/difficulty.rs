@@ -40,7 +40,7 @@ handle!(GradualDifficultyHandle -> GradualDifficulty);
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_gradual_difficulty_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_gradual_difficulty_new(
     difficulty: *mut DifficultyHandle,
     map: *const BeatmapHandle,
@@ -70,7 +70,7 @@ pub extern "C" fn rosu_pp_gradual_difficulty_new(
 ///
 /// **Handle reuse:** The `handle` remains valid after `Ok` and can be used for
 /// subsequent calls.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_gradual_difficulty_next(
     handle: *mut GradualDifficultyHandle,
     out: *mut DifficultyAttributes,
@@ -93,7 +93,7 @@ pub extern "C" fn rosu_pp_gradual_difficulty_next(
 /// **Parameters:**
 /// - `handle`: A handle returned by `rosu_pp_gradual_difficulty_new`. May be
 ///   null (null is a no-op).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_gradual_difficulty_free(handle: *mut GradualDifficultyHandle) {
     handle.drop_handle();
 }

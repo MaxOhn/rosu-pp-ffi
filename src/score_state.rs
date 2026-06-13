@@ -94,7 +94,7 @@ impl From<&ScoreState> for RosuScoreState {
 ///
 /// Initialize the returned struct with the appropriate hit result counts
 /// for the play being evaluated.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_score_state_new() -> ScoreState {
     ScoreState {
         max_combo: 0,
@@ -122,7 +122,7 @@ pub extern "C" fn rosu_pp_score_state_new() -> ScoreState {
 /// - `mode`: The game mode (0=osu!, 1=taiko, 2=catch, 3=mania).
 ///
 /// **Returns:** The total number of hits, or 0 if `state` is null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_score_state_total_hits(state: *const ScoreState, mode: GameMode) -> u32 {
     if state.is_null() {
         return 0;

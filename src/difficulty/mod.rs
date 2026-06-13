@@ -39,7 +39,7 @@ handle!(DifficultyHandle -> Difficulty);
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_difficulty_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_difficulty_new() -> *mut DifficultyHandle {
     Box::into_raw(Box::new(DifficultyHandle::from(Difficulty::new())))
 }
@@ -57,7 +57,7 @@ pub extern "C" fn rosu_pp_difficulty_new() -> *mut DifficultyHandle {
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_difficulty_free`. The original `handle` remains valid.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_difficulty_clone(
     handle: *const DifficultyHandle,
 ) -> *mut DifficultyHandle {
@@ -79,7 +79,7 @@ pub extern "C" fn rosu_pp_difficulty_clone(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_difficulty_mods(
     handle: *mut DifficultyHandle,
     mods: *const ModsHandle,
@@ -107,7 +107,7 @@ macro_rules! setter {
         /// if `handle` is null.
         ///
         /// **Handle reuse:** The `handle` remains valid after this call.
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub extern "C" fn $fn(
             handle: *mut DifficultyHandle,
             $arg: $ty
@@ -147,7 +147,7 @@ setter!(rosu_pp_difficulty_lazer(lazer: bool));
 ///
 /// **Ownership:** This function **does not** consume the `handle`. The caller
 /// must STILL call `rosu_pp_difficulty_free` on the handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_difficulty_calculate(
     handle: *mut DifficultyHandle,
     map: *const BeatmapHandle,
@@ -183,7 +183,7 @@ pub extern "C" fn rosu_pp_difficulty_calculate(
 ///
 /// **Ownership:** This function **does not** consume the `handle`. The caller
 /// must STILL call `rosu_pp_difficulty_free` on the handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_difficulty_checked_calculate(
     handle: *mut DifficultyHandle,
     map: *const BeatmapHandle,
@@ -219,7 +219,7 @@ pub extern "C" fn rosu_pp_difficulty_checked_calculate(
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_strains_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_difficulty_strains(
     handle: *mut DifficultyHandle,
     map: *const BeatmapHandle,
@@ -242,7 +242,7 @@ pub extern "C" fn rosu_pp_difficulty_strains(
 /// **Note:** Do NOT call this function if the handle was passed to
 /// `rosu_pp_difficulty_gradual_difficulty` or `rosu_pp_difficulty_inspect`
 /// — those functions consume the handle.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_difficulty_free(handle: *mut DifficultyHandle) {
     handle.drop_handle();
 }

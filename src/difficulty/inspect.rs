@@ -31,7 +31,7 @@ handle!(InspectDifficultyHandle -> InspectDifficulty);
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_inspect_difficulty_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_difficulty_inspect_new(
     handle: *mut DifficultyHandle,
 ) -> *mut InspectDifficultyHandle {
@@ -53,7 +53,7 @@ pub extern "C" fn rosu_pp_difficulty_inspect_new(
 ///
 /// **Memory:** The returned handle is owned by the inspector and will be freed
 /// when the inspector is freed. The caller must NOT free it separately.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_inspect_difficulty_mods(
     handle: *const InspectDifficultyHandle,
 ) -> *mut ModsHandle {
@@ -71,7 +71,7 @@ macro_rules! getter {
     ( $fn:ident -> od: $ty:ty ) => { getter!( @attrs $fn -> od: $ty); };
 
     ( $fn:ident -> $field:ident: $ty:ty ) => {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub extern "C" fn $fn(handle: *const InspectDifficultyHandle, out: *mut $ty) -> FfiResult {
             if handle.is_null() || out.is_null() {
                 return FfiResult::NullPointer;
@@ -88,7 +88,7 @@ macro_rules! getter {
     };
 
     ( @attrs $fn:ident -> $field:ident: $ty:ty ) => {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub extern "C" fn $fn(
             handle: *const InspectDifficultyHandle,
             out: *mut $ty,
@@ -129,7 +129,7 @@ getter!(rosu_pp_inspect_difficulty_od -> od: f32);
 /// **Parameters:**
 /// - `handle`: A handle returned by `rosu_pp_difficulty_inspect`. May be null
 ///   (null is a no-op).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_inspect_difficulty_free(handle: *mut InspectDifficultyHandle) {
     handle.drop_handle();
 }

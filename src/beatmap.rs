@@ -34,7 +34,7 @@ handle!(BeatmapHandle -> Beatmap);
 ///
 /// **Memory:** On `Ok`, the caller owns the handle written to `out` and must
 /// free it with `rosu_pp_beatmap_free`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_from_path(
     path: *const ffi::c_char,
     out: *mut *mut BeatmapHandle,
@@ -78,7 +78,7 @@ pub extern "C" fn rosu_pp_beatmap_from_path(
 /// **Memory:** On `Ok`, the caller owns the handle written to `out` and must
 /// free it with `rosu_pp_beatmap_free`. The `bytes` buffer is only borrowed
 /// during this call and may be freed immediately after.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_from_bytes(
     bytes: *const u8,
     len: usize,
@@ -109,7 +109,7 @@ macro_rules! getter {
         /// - `handle`: A valid beatmap handle pointer (must not be null).
         ///
         /// **Returns:** The field value, or the type's default value if `handle` is null.
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub extern "C" fn $fn(handle: *const BeatmapHandle) -> $ty {
             if handle.is_null() {
                 return <$ty>::default();
@@ -125,7 +125,7 @@ macro_rules! getter {
         /// - `handle`: A valid beatmap handle pointer (must not be null).
         ///
         /// **Returns:** The computed value, or the type's default value if `handle` is null.
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub extern "C" fn $fn(handle: *const BeatmapHandle) -> $ty {
             if handle.is_null() {
                 return <$ty>::default();
@@ -167,7 +167,7 @@ getter!(rosu_pp_beatmap_hit_sound_count(|map: &Beatmap| map.hit_sounds.len()) ->
 /// **Returns:** `FfiResult::Ok` if the map is safe to use, or
 /// `FfiResult::TooSuspicious` if the map contains suspicious objects.
 /// Returns `FfiResult::NullPointer` if `handle` is null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_check_suspicion(handle: *const BeatmapHandle) -> FfiResult {
     if handle.is_null() {
         return FfiResult::NullPointer;
@@ -186,7 +186,7 @@ pub extern "C" fn rosu_pp_beatmap_check_suspicion(handle: *const BeatmapHandle) 
 ///   `rosu_pp_beatmap_from_bytes`. May be null (null is a no-op).
 ///
 /// After calling this function, the handle must NOT be used again.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_beatmap_free(handle: *mut BeatmapHandle) {
     handle.drop_handle();
 }

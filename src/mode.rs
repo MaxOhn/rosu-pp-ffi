@@ -68,7 +68,7 @@ from!(RosuModsGameMode);
 ///
 /// **Memory:** The returned pointer points to static data and does NOT need
 /// to be freed.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mode_to_str(mode: GameMode) -> *const ffi::c_char {
     let s = match mode {
         GameMode::Osu => "osu",
@@ -95,7 +95,7 @@ pub extern "C" fn rosu_pp_mode_to_str(mode: GameMode) -> *const ffi::c_char {
 /// **Returns:** `FfiResult::Ok` on success, `FfiResult::InvalidArgument` if the
 /// string doesn't match any known mode, or `FfiResult::NullPointer` if `s` or
 /// `out` is null.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mode_from_str(s: *const ffi::c_char, out: *mut GameMode) -> FfiResult {
     if s.is_null() || out.is_null() {
         return FfiResult::NullPointer;
