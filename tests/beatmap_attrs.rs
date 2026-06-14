@@ -313,55 +313,61 @@ fn getters_null_handle() {
 #[test]
 fn override_ar() {
     unsafe {
-        let _builder = rosu_pp_beatmap_attrs_builder_new();
+        let builder = rosu_pp_beatmap_attrs_builder_new();
         let result = rosu_pp_beatmap_attrs_builder_ar(std::ptr::null_mut(), 7.0, false);
         assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+        rosu_pp_beatmap_attrs_builder_free(builder);
     }
 }
 
 #[test]
 fn override_od() {
     unsafe {
-        let _builder = rosu_pp_beatmap_attrs_builder_new();
+        let builder = rosu_pp_beatmap_attrs_builder_new();
         let result = rosu_pp_beatmap_attrs_builder_od(std::ptr::null_mut(), 7.0, false);
         assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+        rosu_pp_beatmap_attrs_builder_free(builder);
     }
 }
 
 #[test]
 fn override_cs() {
     unsafe {
-        let _builder = rosu_pp_beatmap_attrs_builder_new();
+        let builder = rosu_pp_beatmap_attrs_builder_new();
         let result = rosu_pp_beatmap_attrs_builder_cs(std::ptr::null_mut(), 7.0, false);
         assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+        rosu_pp_beatmap_attrs_builder_free(builder);
     }
 }
 
 #[test]
 fn override_hp() {
     unsafe {
-        let _builder = rosu_pp_beatmap_attrs_builder_new();
+        let builder = rosu_pp_beatmap_attrs_builder_new();
         let result = rosu_pp_beatmap_attrs_builder_hp(std::ptr::null_mut(), 7.0, false);
         assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+        rosu_pp_beatmap_attrs_builder_free(builder);
     }
 }
 
 #[test]
 fn override_clock_rate() {
     unsafe {
-        let _builder = rosu_pp_beatmap_attrs_builder_new();
+        let builder = rosu_pp_beatmap_attrs_builder_new();
         let result = rosu_pp_beatmap_attrs_builder_clock_rate(std::ptr::null_mut(), 1.5);
         assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+        rosu_pp_beatmap_attrs_builder_free(builder);
     }
 }
 
 #[test]
 fn override_mode() {
     unsafe {
-        let _builder = rosu_pp_beatmap_attrs_builder_new();
+        let builder = rosu_pp_beatmap_attrs_builder_new();
         let result =
             rosu_pp_beatmap_attrs_builder_mode(std::ptr::null_mut(), rosu_pp_GameMode::Osu, false);
         assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+        rosu_pp_beatmap_attrs_builder_free(builder);
     }
 }
 
