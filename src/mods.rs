@@ -4,11 +4,11 @@
 //! `"{"acronym":"HDFL","settings":{}}"`) and convert between mod
 //! representations (bitflags, strings, etc.).
 
-use std::{error, ffi, fmt, ptr};
+use std::{ffi, ptr, str::FromStr};
 
-use rosu_mods::{GameModsLegacy, serde::GameModsSeed};
+use rosu_mods::{GameModsIntermode, GameModsLegacy, serde::GameModsSeed};
 use rosu_pp::GameMods;
-use serde::de::{DeserializeSeed, IntoDeserializer, value::StrDeserializer};
+use serde::de::DeserializeSeed;
 
 use crate::{
     error::FfiResult,
@@ -24,106 +24,154 @@ pub struct ModsHandle(GameMods);
 
 handle!(ModsHandle -> GameMods);
 
-fn parse_mods(s: *const ffi::c_char, seed: GameModsSeed, out: *mut *mut ModsHandle) -> FfiResult {
-    #[derive(Debug)]
-    struct SerdeError;
+fn write_mods(mods: Option<GameMods>, out: *mut *mut ModsHandle) -> FfiResult {
+    match mods {
+        Some(mods) => {
+            unsafe { *out = Box::into_raw(Box::new(ModsHandle::from(mods))) };
 
-    impl serde::de::Error for SerdeError {
-        fn custom<T: fmt::Display>(_: T) -> Self {
-            Self
+            FfiResult::Ok
+        }
+        None => {
+            unsafe { *out = ptr::null_mut() };
+
+            FfiResult::ParseError
         }
     }
+}
 
-    impl error::Error for SerdeError {}
-
-    impl fmt::Display for SerdeError {
-        fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-            Ok(())
-        }
-    }
-
+/// Parse a mod string from acronyms (e.g., `"HR"`, `"HDhtFLwG"`).
+///
+/// Parses a concatenated string of mod acronyms and returns a handle to the
+/// resulting mods collection.
+///
+/// **Parameters:**
+/// - `s`: Null-terminated C string containing mod acronyms.
+/// - `out`: Pointer to store the resulting `ModsHandle`.
+///
+/// **Returns:** `FfiResult::Ok` on success, `FfiResult::ParseError` if the
+/// string is not valid UTF-8, or `FfiResult::NullPointer` if `s` or `out`
+/// is null.
+///
+/// **Memory:** The caller owns the handle written to `out` and must free it
+/// with `rosu_pp_mods_free`.
+#[unsafe(no_mangle)]
+pub extern "C" fn rosu_pp_mods_from_acronym(
+    s: *const ffi::c_char,
+    out: *mut *mut ModsHandle,
+) -> FfiResult {
     if s.is_null() || out.is_null() {
         return FfiResult::NullPointer;
     }
 
-    let c_str = unsafe { ffi::CStr::from_ptr(s) };
-
-    let Ok(s) = c_str.to_str() else {
-        return FfiResult::ParseError;
-    };
-
-    let deserializer: StrDeserializer<'_, SerdeError> = s.into_deserializer();
-
-    let Ok(mods) = seed.deserialize(deserializer) else {
-        return FfiResult::ParseError;
-    };
-
-    unsafe { *out = Box::into_raw(Box::new(ModsHandle::from(GameMods::from(mods)))) };
-
-    FfiResult::Ok
+    write_mods(from_acronym(s), out)
 }
 
-/// Parse a mod string with an explicit game mode.
+// Example input: `"HD"`, `"DTFLEZ"`
+//
+// Note: Parsing itself *always* succeeds. Unknown acronyms are assigned to the
+// "UnknownMod" variant
+fn from_acronym(s: *const ffi::c_char) -> Option<GameMods> {
+    let c_str = unsafe { ffi::CStr::from_ptr(s) };
+    let s = c_str.to_str().ok()?;
+    let Ok(mods) = <GameModsIntermode as FromStr>::from_str(s);
+
+    Some(GameMods::from(mods))
+}
+
+/// Parse a mod string from JSON with an explicit game mode.
 ///
-/// Parses mods (e.g., `"HDHR"`, `"{acronym: "HDFL","settings":{}}"`) and
-/// returns a handle to the resulting mods collection specific to the given
-/// game mode.
+/// Parses a JSON-encoded mod specification and returns a handle to the
+/// resulting mods collection specific to the given game mode.
+///
+/// Example input:
+// - `""HDHRFL""`
+/// - `"72"`
+/// - `"[{\"acronym\":\"HD\"},{\"acronym\":\"DT\",\"settings\":{\"speed_change\":1.2}}]"`
 ///
 /// **Parameters:**
-/// - `s`: Null-terminated C string containing the mod acronyms.
+/// - `s`: Null-terminated C string containing the JSON-encoded mod specification.
 /// - `deny_unknown_fields`: If `true`, parsing fails when unknown mod settings
 ///   are encountered. If `false`, unknown settings are silently ignored.
 /// - `mode`: The game mode to parse mods for (osu!, taiko, catch, or mania).
 /// - `out`: Pointer to store the resulting `ModsHandle`.
 ///
-/// **Returns:** `FfiResult::Ok` on success, or `FfiResult::ParseError` if the
-/// string could not be parsed, or `FfiResult::NullPointer` if `s` or `out` is
-/// null.
+/// **Returns:** `FfiResult::Ok` on success, `FfiResult::ParseError` if the
+/// string is not valid JSON or could not be parsed, or `FfiResult::NullPointer`
+/// if `s` or `out` is null.
 ///
 /// **Memory:** The caller owns the handle written to `out` and must free it with
 /// `rosu_pp_mods_free`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_parse_with_mode(
+pub extern "C" fn rosu_pp_mods_from_json_with_mode(
     s: *const ffi::c_char,
     deny_unknown_fields: bool,
     mode: GameMode,
     out: *mut *mut ModsHandle,
 ) -> FfiResult {
+    if s.is_null() || out.is_null() {
+        return FfiResult::NullPointer;
+    }
+
     let seed = GameModsSeed::Mode {
         mode: mode.into(),
         deny_unknown_fields,
     };
 
-    parse_mods(s, seed, out)
+    write_mods(from_json(s, seed), out)
 }
 
-/// Parse a mod string with automatic mode detection.
+/// Parse a mod string from JSON with automatic mode detection.
 ///
-/// Parses mods and infers the game mode from the mod combinations.
-/// For example, `"FI"` (FadeIn) implies mania mode since it is mania-specific.
+/// Parses a JSON-encoded mod specification and infers the game mode from the
+/// mod combinations. For example, `"FI"` (FadeIn) implies mania mode since it
+/// is mania-specific.
+///
+/// Example input:
+// - `""HDHRFL""`
+/// - `"72"`
+/// - `"[{\"acronym\":\"HD\"},{\"acronym\":\"DT\",\"settings\":{\"speed_change\":1.2}}]"`
 ///
 /// **Parameters:**
-/// - `s`: Null-terminated C string containing the mod acronyms.
+/// - `s`: Null-terminated C string containing the JSON-encoded mod specification.
 /// - `deny_unknown_fields`: If `true`, parsing fails when unknown mod settings
 ///   are encountered. If `false`, unknown settings are silently ignored.
 /// - `out`: Pointer to store the resulting `ModsHandle`.
 ///
-/// **Returns:** `FfiResult::Ok` on success, or `FfiResult::ParseError` if the
-/// string could not be parsed, or `FfiResult::NullPointer` if `s` or `out` is null.
+/// **Returns:** `FfiResult::Ok` on success, `FfiResult::ParseError` if the
+/// string is not valid JSON or could not be parsed, or `FfiResult::NullPointer`
+/// if `s` or `out` is null.
 ///
 /// **Memory:** The caller owns the handle written to `out` and must free it with
 /// `rosu_pp_mods_free`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_parse(
+pub extern "C" fn rosu_pp_mods_from_json(
     s: *const ffi::c_char,
     deny_unknown_fields: bool,
     out: *mut *mut ModsHandle,
 ) -> FfiResult {
+    if s.is_null() || out.is_null() {
+        return FfiResult::NullPointer;
+    }
+
     let seed = GameModsSeed::SameModeForEachMod {
         deny_unknown_fields,
     };
 
-    parse_mods(s, seed, out)
+    write_mods(from_json(s, seed), out)
+}
+
+// Example input:
+// - `""HDHRFL""`
+// - `"72"`
+// - `"{"acronym":"EZ"}"`
+// - `"{"acronym":"HD",1024,{"acronym":"DT","settings":{"speed_change":1.2}}}"`
+fn from_json(s: *const ffi::c_char, seed: GameModsSeed) -> Option<GameMods> {
+    let c_str = unsafe { ffi::CStr::from_ptr(s) };
+    let s = c_str.to_str().ok()?;
+    let mut deserializer = serde_json::Deserializer::from_str(s);
+    let mods = seed.deserialize(&mut deserializer).ok()?;
+
+    Some(GameMods::from(mods))
 }
 
 /// Create a mods handle from legacy bitflags.
@@ -204,9 +252,9 @@ pub extern "C" fn rosu_pp_mods_free_string(s: *mut ffi::c_char) {
 /// Free a mods handle and release its memory.
 ///
 /// **Parameters:**
-/// - `handle`: A handle returned by `rosu_pp_mods_parse`,
-///   `rosu_pp_mods_parse_with_mode`, or `rosu_pp_mods_from_bits`.
-///   May be null (null is a no-op).
+/// - `handle`: A handle returned by `rosu_pp_mods_from_acronym`,
+///   `rosu_pp_mods_from_json`, `rosu_pp_mods_from_json_with_mode`, or
+///   `rosu_pp_mods_from_bits`. May be null (null is a no-op).
 #[unsafe(no_mangle)]
 pub extern "C" fn rosu_pp_mods_free(handle: *mut ModsHandle) {
     handle.drop_handle();

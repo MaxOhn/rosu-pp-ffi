@@ -108,8 +108,9 @@ pub use beatmap::{
 // Mods
 pub use mods::ModsHandle as rosu_pp_ModsHandle;
 pub use mods::{
-    rosu_pp_mods_free, rosu_pp_mods_free_string, rosu_pp_mods_from_bits, rosu_pp_mods_parse,
-    rosu_pp_mods_parse_with_mode, rosu_pp_mods_to_bits, rosu_pp_mods_to_string,
+    rosu_pp_mods_free, rosu_pp_mods_free_string, rosu_pp_mods_from_acronym,
+    rosu_pp_mods_from_bits, rosu_pp_mods_from_json, rosu_pp_mods_from_json_with_mode,
+    rosu_pp_mods_to_bits, rosu_pp_mods_to_string,
 };
 
 // Difficulty

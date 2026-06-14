@@ -51,6 +51,7 @@ pub mod mods {
     pub const HT: u32 = 1 << 8;
     pub const FL: u32 = 1 << 10;
     pub const SO: u32 = 1 << 12;
+    pub const FI: u32 = 1 << 20;
 }
 
 /// Floating-point comparison helper

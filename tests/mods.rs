@@ -6,15 +6,17 @@ use common::mods;
 
 use rosu_pp_ffi::{
     rosu_pp_FfiResult, rosu_pp_GameMode, rosu_pp_mods_free, rosu_pp_mods_free_string,
-    rosu_pp_mods_from_bits, rosu_pp_mods_parse, rosu_pp_mods_parse_with_mode, rosu_pp_mods_to_bits,
-    rosu_pp_mods_to_string,
+    rosu_pp_mods_from_acronym, rosu_pp_mods_from_bits, rosu_pp_mods_from_json,
+    rosu_pp_mods_from_json_with_mode, rosu_pp_mods_to_bits, rosu_pp_mods_to_string,
 };
 
+// --- rosu_pp_mods_from_acronym ---
+
 #[test]
-fn parse_simple_mods() {
+fn from_acronym_hd_hr() {
     let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
     let s = std::ffi::CString::new("HDHR").unwrap();
-    let result = rosu_pp_mods_parse(s.as_ptr(), false, &mut handle);
+    let result = rosu_pp_mods_from_acronym(s.as_ptr(), &mut handle);
     assert_eq!(result, rosu_pp_FfiResult::Ok);
     assert!(!handle.is_null());
 
@@ -25,10 +27,10 @@ fn parse_simple_mods() {
 }
 
 #[test]
-fn parse_dt() {
+fn from_acronym_dt() {
     let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
     let s = std::ffi::CString::new("DT").unwrap();
-    let result = rosu_pp_mods_parse(s.as_ptr(), false, &mut handle);
+    let result = rosu_pp_mods_from_acronym(s.as_ptr(), &mut handle);
     assert_eq!(result, rosu_pp_FfiResult::Ok);
     assert!(!handle.is_null());
 
@@ -39,10 +41,30 @@ fn parse_dt() {
 }
 
 #[test]
-fn parse_no_mods() {
+fn from_acronym_invalid() {
+    let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
+    let s = std::ffi::CString::new("{\"acronym\":\"HD\"}").unwrap();
+    let result = rosu_pp_mods_from_acronym(s.as_ptr(), &mut handle);
+    assert_eq!(result, rosu_pp_FfiResult::Ok);
+    assert!(!handle.is_null());
+
+    assert!(!handle.is_null());
+
+    let c_str = rosu_pp_mods_to_string(handle);
+    assert!(!c_str.is_null());
+    let s = unsafe { std::ffi::CStr::from_ptr(c_str) }.to_str().unwrap();
+    assert_eq!(s, "ACHD\"}:\"M\"NYRO{\"");
+    let bits = rosu_pp_mods_to_bits(handle);
+    assert_eq!(bits, 8); // only HD has a bitvalue
+    rosu_pp_mods_free_string(c_str);
+    rosu_pp_mods_free(handle);
+}
+
+#[test]
+fn from_acronym_empty() {
     let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
     let s = std::ffi::CString::new("").unwrap();
-    let result = rosu_pp_mods_parse(s.as_ptr(), false, &mut handle);
+    let result = rosu_pp_mods_from_acronym(s.as_ptr(), &mut handle);
     assert_eq!(result, rosu_pp_FfiResult::Ok);
     assert!(!handle.is_null());
 
@@ -53,38 +75,160 @@ fn parse_no_mods() {
 }
 
 #[test]
-fn parse_with_mode() {
+fn from_acronym_null_string() {
     let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
-    let s = std::ffi::CString::new("HDHR").unwrap();
-    let result =
-        rosu_pp_mods_parse_with_mode(s.as_ptr(), false, rosu_pp_GameMode::Osu, &mut handle);
+    let result = rosu_pp_mods_from_acronym(std::ptr::null_mut(), &mut handle);
+    assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+}
+
+#[test]
+fn from_acronym_null_out() {
+    let s = std::ffi::CString::new("HD").unwrap();
+    let result = rosu_pp_mods_from_acronym(s.as_ptr(), std::ptr::null_mut());
+    assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+}
+
+// --- rosu_pp_mods_from_json ---
+
+#[test]
+fn from_json_simple() {
+    let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
+    let s = std::ffi::CString::new(r#"{"acronym":"HD"}"#).unwrap();
+    let result = rosu_pp_mods_from_json(s.as_ptr(), false, &mut handle);
     assert_eq!(result, rosu_pp_FfiResult::Ok);
     assert!(!handle.is_null());
 
     let bits = rosu_pp_mods_to_bits(handle);
-    assert_eq!(bits, mods::HD | mods::HR);
+    assert_eq!(bits, mods::HD);
 
     rosu_pp_mods_free(handle);
 }
 
 #[test]
-fn parse_invalid_string() {
-    // The rosu-mods library falls back to legacy parsing for non-JSON strings,
-    // so even invalid strings are accepted (unknown bits are silently dropped).
+fn from_json_array() {
     let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
-    let s = std::ffi::CString::new(r#"not valid json at all {[""#).unwrap();
-    let result = rosu_pp_mods_parse(s.as_ptr(), true, &mut handle);
+    let s = std::ffi::CString::new(
+        r#"[
+            {
+                "acronym": "HD"
+            },
+            1024,
+            {
+                "acronym": "DT",
+                "settings": {
+                    "speed_change": 1.2
+                }
+            }
+        ]"#,
+    )
+    .unwrap();
+    let result = rosu_pp_mods_from_json(s.as_ptr(), false, &mut handle);
     assert_eq!(result, rosu_pp_FfiResult::Ok);
     assert!(!handle.is_null());
+
+    let c_str = rosu_pp_mods_to_string(handle);
+    assert!(!c_str.is_null());
+    let s = unsafe { std::ffi::CStr::from_ptr(c_str) }.to_str().unwrap();
+    assert_eq!(s, "DTFLHD");
+    rosu_pp_mods_free_string(c_str);
     rosu_pp_mods_free(handle);
 }
 
 #[test]
-fn parse_null_string() {
+fn from_json_int_value() {
     let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
-    let result = rosu_pp_mods_parse(std::ptr::null_mut(), false, &mut handle);
+    let s = std::ffi::CString::new("72").unwrap();
+    let result = rosu_pp_mods_from_json(s.as_ptr(), false, &mut handle);
+    assert_eq!(result, rosu_pp_FfiResult::Ok);
+
+    let c_str = rosu_pp_mods_to_string(handle);
+    assert!(!c_str.is_null());
+    let s = unsafe { std::ffi::CStr::from_ptr(c_str) }.to_str().unwrap();
+    assert_eq!(s, "DTHD");
+    rosu_pp_mods_free_string(c_str);
+    rosu_pp_mods_free(handle);
+}
+
+#[test]
+fn from_json_invalid() {
+    let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
+    let s = std::ffi::CString::new("invalid json").unwrap();
+    let result = rosu_pp_mods_from_json(s.as_ptr(), false, &mut handle);
+    assert_eq!(result, rosu_pp_FfiResult::ParseError);
+    assert!(handle.is_null());
+}
+
+#[test]
+fn from_json_null_string() {
+    let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
+    let result = rosu_pp_mods_from_json(std::ptr::null_mut(), false, &mut handle);
     assert_eq!(result, rosu_pp_FfiResult::NullPointer);
 }
+
+#[test]
+fn from_json_null_out() {
+    let s = std::ffi::CString::new("[]").unwrap();
+    let result = rosu_pp_mods_from_json(s.as_ptr(), false, std::ptr::null_mut());
+    assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+}
+
+// --- rosu_pp_mods_from_json_with_mode ---
+
+#[test]
+fn from_json_with_mode_osu() {
+    let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
+    let s = std::ffi::CString::new(r#"[{"acronym":"HD"},{"acronym":"FI"}]"#).unwrap();
+    let result =
+        rosu_pp_mods_from_json_with_mode(s.as_ptr(), false, rosu_pp_GameMode::Mania, &mut handle);
+    assert_eq!(result, rosu_pp_FfiResult::Ok);
+    assert!(!handle.is_null());
+
+    let bits = rosu_pp_mods_to_bits(handle);
+    assert_eq!(bits, mods::HD | mods::FI);
+
+    rosu_pp_mods_free(handle);
+}
+
+#[test]
+fn from_json_with_mode_array() {
+    let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
+    let s = std::ffi::CString::new(
+        r#"[{"acronym":"HD"},{"acronym":"DT","settings":{"speed_change":1.2}}]"#,
+    )
+    .unwrap();
+    let result =
+        rosu_pp_mods_from_json_with_mode(s.as_ptr(), false, rosu_pp_GameMode::Taiko, &mut handle);
+    assert_eq!(result, rosu_pp_FfiResult::Ok);
+    assert!(!handle.is_null());
+
+    rosu_pp_mods_free(handle);
+}
+
+#[test]
+fn from_json_with_mode_null_string() {
+    let mut handle = std::ptr::null_mut::<rosu_pp_ffi::rosu_pp_ModsHandle>();
+    let result = rosu_pp_mods_from_json_with_mode(
+        std::ptr::null_mut(),
+        false,
+        rosu_pp_GameMode::Osu,
+        &mut handle,
+    );
+    assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+}
+
+#[test]
+fn from_json_with_mode_null_out() {
+    let s = std::ffi::CString::new("HD").unwrap();
+    let result = rosu_pp_mods_from_json_with_mode(
+        s.as_ptr(),
+        false,
+        rosu_pp_GameMode::Osu,
+        std::ptr::null_mut(),
+    );
+    assert_eq!(result, rosu_pp_FfiResult::NullPointer);
+}
+
+// --- rosu_pp_mods_from_bits ---
 
 #[test]
 fn from_bits_zero() {
@@ -112,6 +256,8 @@ fn from_bits_dt() {
     assert_eq!(bits, mods::DT);
     rosu_pp_mods_free(handle);
 }
+
+// --- rosu_pp_mods_to_string ---
 
 #[test]
 fn to_string_simple() {
@@ -143,6 +289,8 @@ fn to_string_null_handle() {
     let result = rosu_pp_mods_to_string(null_handle as *const _);
     assert!(result.is_null());
 }
+
+// --- Free functions ---
 
 #[test]
 fn free_string_null() {
