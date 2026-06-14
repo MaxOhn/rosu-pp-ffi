@@ -84,14 +84,12 @@ pub unsafe extern "C" fn rosu_pp_performance_mods(
 }
 
 macro_rules! setter {
-    ( $fn:ident ( $arg:ident: $ty:ty $(, $args:ident: $tys:ty ),* ) ) => {
-        /// Configuration setter for the performance calculator.
-        ///
-        /// **Parameters:**
-        /// - `handle`: A valid `PerformanceHandle` pointer (may be null).
-        /// - `$arg`: The primary parameter value.
-        // TODO: improve macro stuff
-        // $(, `$args`): Additional parameter values.
+    (
+        $( #[ $meta:meta ] )*
+        $fn:ident ( $arg:ident: $ty:ty $(, $arg2:ident: $ty2:ty )? )
+    ) => {
+        $( #[ $meta ] )*
+        ///   - `handle`: A valid `PerformanceHandle` pointer (may be null).
         ///
         /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
         /// if `handle` is null.
@@ -105,39 +103,230 @@ macro_rules! setter {
         pub unsafe extern "C" fn $fn(
             handle: *mut PerformanceHandle,
             $arg: $ty
-            $(, $args: $tys )*
+            $(, $arg2: $ty2 )?
         ) -> FfiResult {
             if handle.is_null() {
                 return FfiResult::NullPointer;
             }
 
-            handle.by_owned(|perf| perf.$arg( $arg $(, $args )* ));
+            handle.by_owned(|perf| perf.$arg( $arg $(, $arg2 )? ));
 
             FfiResult::Ok
         }
     }
 }
 
-setter!(rosu_pp_performance_passed_objects(passed_objects: u32));
-setter!(rosu_pp_performance_clock_rate(clock_rate: f64));
-setter!(rosu_pp_performance_ar(ar: f32, fixed: bool));
-setter!(rosu_pp_performance_cs(cs: f32, fixed: bool));
-setter!(rosu_pp_performance_hp(hp: f32, fixed: bool));
-setter!(rosu_pp_performance_od(od: f32, fixed: bool));
-setter!(rosu_pp_performance_hardrock_offsets(hardrock_offsets: bool));
-setter!(rosu_pp_performance_lazer(lazer: bool));
-setter!(rosu_pp_performance_accuracy(accuracy: f64));
-setter!(rosu_pp_performance_misses(misses: u32));
-setter!(rosu_pp_performance_combo(combo: u32));
-setter!(rosu_pp_performance_large_tick_hits(large_tick_hits: u32));
-setter!(rosu_pp_performance_small_tick_hits(small_tick_hits: u32));
-setter!(rosu_pp_performance_slider_end_hits(slider_end_hits: u32));
-setter!(rosu_pp_performance_n300(n300: u32));
-setter!(rosu_pp_performance_n100(n100: u32));
-setter!(rosu_pp_performance_n50(n50: u32));
-setter!(rosu_pp_performance_n_geki(n_geki: u32));
-setter!(rosu_pp_performance_n_katu(n_katu: u32));
-setter!(rosu_pp_performance_legacy_total_score(legacy_total_score: u32));
+setter! {
+    /// Amount of passed objects for partial plays, e.g. a fail.
+    ///
+    /// **Parameters:**
+    ///   - `passed_objects`: The number of hit objects to consider.
+    rosu_pp_performance_passed_objects(passed_objects: u32)
+}
+
+setter! {
+    /// Adjust the clock rate used in the calculation.
+    ///
+    /// If none is specified, it will take the clock rate based on the mods
+    /// i.e. 1.5 for DT, 0.75 for HT and 1.0 otherwise.
+    ///
+    /// **Parameters:**
+    ///   - `clock_rate`: The clock rate multiplier (must be positive).
+    rosu_pp_performance_clock_rate(clock_rate: f64)
+}
+
+setter! {
+    /// Override the approach rate (AR).
+    ///
+    /// Sets a fixed AR value, bypassing the normal AR calculation from the
+    /// beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+    /// `false`, the value may be adjusted by mods and clock rate.
+    ///
+    /// **Parameters:**
+    ///   - `ar`: The approach rate value.
+    ///   - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+    ///     adjusted by mods and clock rate.
+    rosu_pp_performance_ar(ar: f32, fixed: bool)
+}
+
+setter! {
+    /// Override the circle size (CS).
+    ///
+    /// Sets a fixed CS value, bypassing the normal CS calculation from the
+    /// beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+    /// `false`, the value may be adjusted by mods.
+    ///
+    /// **Parameters:**
+    ///   - `cs`: The circle size value.
+    ///   - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+    ///     adjusted by mods.
+    rosu_pp_performance_cs(cs: f32, fixed: bool)
+}
+
+setter! {
+    /// Override the HP drain rate.
+    ///
+    /// Sets a fixed HP value, bypassing the normal HP calculation from the
+    /// beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+    /// `false`, the value may be adjusted by mods.
+    ///
+    /// **Parameters:**
+    ///   - `hp`: The HP drain rate value.
+    ///   - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+    ///     adjusted by mods.
+    rosu_pp_performance_hp(hp: f32, fixed: bool)
+}
+
+setter! {
+    /// Override the overall difficulty (OD).
+    ///
+    /// Sets a fixed OD value, bypassing the normal OD calculation from the
+    /// beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+    /// `false`, the value may be adjusted by mods and clock rate.
+    ///
+    /// **Parameters:**
+    ///   - `od`: The overall difficulty value.
+    ///   - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+    ///     adjusted by mods and clock rate.
+    rosu_pp_performance_od(od: f32, fixed: bool)
+}
+
+setter! {
+    /// Adjust patterns as if the HR mod is enabled.
+    ///
+    /// Only relevant for osu!catch.
+    ///
+    /// **Parameters:**
+    ///   - `hardrock_offsets`: Whether to apply hardrock-specific offsets.
+    rosu_pp_performance_hardrock_offsets(hardrock_offsets: bool)
+}
+
+setter! {
+    /// Whether the calculated attributes belong to an osu!lazer or osu!stable
+    /// score.
+    ///
+    /// **Parameters:**
+    ///   - `lazer`: Whether to use lazer mode calculation.
+    rosu_pp_performance_lazer(lazer: bool)
+}
+
+setter! {
+    /// Set the accuracy between `0.0` and `100.0`.
+    ///
+    /// **Parameters:**
+    ///   - `accuracy`: The accuracy value (0.0–100.0).
+    rosu_pp_performance_accuracy(accuracy: f64)
+}
+
+setter! {
+    /// Set the number of misses.
+    ///
+    /// **Parameters:**
+    ///   - `misses`: The number of misses in the score.
+    rosu_pp_performance_misses(misses: u32)
+}
+
+setter! {
+    /// Set the maximum combo achieved.
+    ///
+    /// **Parameters:**
+    ///   - `combo`: The maximum combo achieved in the score.
+    rosu_pp_performance_combo(combo: u32)
+}
+
+setter! {
+    /// Specify the amount of "large tick" hits.
+    ///
+    /// Only relevant for osu!standard.
+    ///
+    /// The meaning depends on the kind of score:
+    /// - if set on osu!stable, this value is irrelevant and can be `0`
+    /// - if set on osu!lazer *with* slider accuracy, this value is the amount
+    ///   of hit slider ticks and repeats
+    /// - if set on osu!lazer *without* slider accuracy, this value is the
+    ///   amount of hit slider heads, ticks, and repeats
+    ///
+    /// **Parameters:**
+    ///   - `large_tick_hits`: The number of large tick hits.
+    rosu_pp_performance_large_tick_hits(large_tick_hits: u32)
+}
+
+setter! {
+    /// Specify the amount of "small tick" hits.
+    ///
+    /// Only relevant for osu!standard lazer scores without slider accuracy. In
+    /// that case, this value is the amount of slider tail hits.
+    ///
+    /// **Parameters:**
+    ///   - `small_tick_hits`: The number of small tick hits.
+    rosu_pp_performance_small_tick_hits(small_tick_hits: u32)
+}
+
+setter! {
+    /// Specify the amount of hit slider ends.
+    ///
+    /// Only relevant for osu!standard lazer scores with slider accuracy.
+    ///
+    /// **Parameters:**
+    ///   - `slider_end_hits`: The number of slider end hits.
+    rosu_pp_performance_slider_end_hits(slider_end_hits: u32)
+}
+
+setter! {
+    /// Specify the amount of 300s of a play.
+    ///
+    /// **Parameters:**
+    ///   - `n300`: The number of 300-score hit results.
+    rosu_pp_performance_n300(n300: u32)
+}
+
+setter! {
+    /// Specify the amount of 100s of a play.
+    ///
+    /// **Parameters:**
+    ///   - `n100`: The number of 100-score hit results.
+    rosu_pp_performance_n100(n100: u32)
+}
+
+setter! {
+    /// Specify the amount of 50s of a play.
+    ///
+    /// **Parameters:**
+    ///   - `n50`: The number of 50-score hit results.
+    rosu_pp_performance_n50(n50: u32)
+}
+
+setter! {
+    /// Specify the amount of gekis of a play.
+    ///
+    /// Only relevant for osu!mania for which it repesents the
+    /// amount of n320.
+    ///
+    /// **Parameters:**
+    ///   - `n_geki`: The number of geki hits.
+    rosu_pp_performance_n_geki(n_geki: u32)
+}
+
+setter! {
+    /// Specify the amount of katus of a play.
+    ///
+    /// Only relevant for osu!catch for which it represents the amount of tiny
+    /// droplet misses and osu!mania for which it repesents the amount of n200.
+    ///
+    /// **Parameters:**
+    ///   - `n_katu`: The number of katu hits.
+    rosu_pp_performance_n_katu(n_katu: u32)
+}
+
+setter! {
+    /// Specify the legacy total score.
+    ///
+    /// Only relevant for osu!standard.
+    ///
+    /// **Parameters:**
+    ///   - `legacy_total_score`: The legacy total score value.
+    rosu_pp_performance_legacy_total_score(legacy_total_score: u32)
+}
 
 /// Set the priority of hitresults when generating remaining hitresults.
 ///

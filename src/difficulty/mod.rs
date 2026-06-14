@@ -107,14 +107,12 @@ pub unsafe extern "C" fn rosu_pp_difficulty_mods(
 }
 
 macro_rules! setter {
-    ( $fn:ident ( $arg:ident: $ty:ty $(, $args:ident: $tys:ty ),* ) ) => {
-        /// Configuration setter for the difficulty calculator.
-        ///
-        /// **Parameters:**
-        /// - `handle`: A valid `DifficultyHandle` pointer (may be null).
-        /// - `$arg`: The primary parameter value.
-        // TODO: improve macro stuff
-        // $(, `$args`): Additional parameter values.
+    (
+        $( #[ $meta:meta ] )*
+        $fn:ident ( $arg:ident: $ty:ty $(, $arg2:ident: $ty2:ty )? )
+    ) => {
+        $( #[$meta] )*
+        ///   - `handle`: A valid `DifficultyHandle` pointer (may be null).
         ///
         /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
         /// if `handle` is null.
@@ -128,27 +126,112 @@ macro_rules! setter {
         pub unsafe extern "C" fn $fn(
             handle: *mut DifficultyHandle,
             $arg: $ty
-            $(, $args: $tys )*
+            $(, $arg2: $ty2 )?
         ) -> FfiResult {
             if handle.is_null() {
                 return FfiResult::NullPointer;
             }
 
-            handle.by_owned(|diff| diff.$arg( $arg $(, $args )* ));
+            handle.by_owned(|diff| diff.$arg( $arg $(, $arg2 )? ));
 
             FfiResult::Ok
         }
     }
 }
 
-setter!(rosu_pp_difficulty_passed_objects(passed_objects: u32));
-setter!(rosu_pp_difficulty_clock_rate(clock_rate: f64));
-setter!(rosu_pp_difficulty_ar(ar: f32, fixed: bool));
-setter!(rosu_pp_difficulty_cs(cs: f32, fixed: bool));
-setter!(rosu_pp_difficulty_hp(hp: f32, fixed: bool));
-setter!(rosu_pp_difficulty_od(od: f32, fixed: bool));
-setter!(rosu_pp_difficulty_hardrock_offsets(hardrock_offsets: bool));
-setter!(rosu_pp_difficulty_lazer(lazer: bool));
+setter! {
+    /// Amount of passed objects for partial plays, e.g. a fail.
+    ///
+    /// **Parameters:**
+    ///   - `passed_objects`: The number of hit objects to consider.
+    rosu_pp_difficulty_passed_objects(passed_objects: u32)
+}
+
+setter! {
+    /// Adjust the clock rate used in the calculation.
+    ///
+    /// If none is specified, it will take the clock rate based on the mods
+    /// i.e. 1.5 for DT, 0.75 for HT and 1.0 otherwise.
+    ///
+    /// **Parameters:**
+    ///   - `clock_rate`: The clock rate multiplier (must be positive).
+    rosu_pp_difficulty_clock_rate(clock_rate: f64)
+}
+
+setter! {
+    /// Override the approach rate (AR).
+    ///
+    /// Sets a fixed AR value, bypassing the normal AR calculation from the
+    /// beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+    /// `false`, the value may be adjusted by mods and clock rate.
+    ///
+    /// **Parameters:**
+    ///   - `ar`: The approach rate value.
+    ///   - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+    ///     adjusted by mods and clock rate.
+    rosu_pp_difficulty_ar(ar: f32, fixed: bool)
+}
+
+setter! {
+    /// Override the circle size (CS).
+    ///
+    /// Sets a fixed CS value, bypassing the normal CS calculation from the
+    /// beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+    /// `false`, the value may be adjusted by mods.
+    ///
+    /// **Parameters:**
+    ///   - `cs`: The circle size value.
+    ///   - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+    ///     adjusted by mods.
+    rosu_pp_difficulty_cs(cs: f32, fixed: bool)
+}
+
+setter! {
+    /// Override the HP drain rate.
+    ///
+    /// Sets a fixed HP value, bypassing the normal HP calculation from the
+    /// beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+    /// `false`, the value may be adjusted by mods.
+    ///
+    /// **Parameters:**
+    ///   - `hp`: The HP drain rate value.
+    ///   - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+    ///     adjusted by mods.
+    rosu_pp_difficulty_hp(hp: f32, fixed: bool)
+}
+
+setter! {
+    /// Override the overall difficulty (OD).
+    ///
+    /// Sets a fixed OD value, bypassing the normal OD calculation from the
+    /// beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+    /// `false`, the value may be adjusted by mods and clock rate.
+    ///
+    /// **Parameters:**
+    ///   - `od`: The overall difficulty value.
+    ///   - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+    ///     adjusted by mods and clock rate.
+    rosu_pp_difficulty_od(od: f32, fixed: bool)
+}
+
+setter! {
+    /// Adjust patterns as if the HR mod is enabled.
+    ///
+    /// Only relevant for osu!catch.
+    ///
+    /// **Parameters:**
+    ///   - `hardrock_offsets`: Whether to apply hardrock-specific offsets.
+    rosu_pp_difficulty_hardrock_offsets(hardrock_offsets: bool)
+}
+
+setter! {
+    /// Whether the calculated attributes belong to an osu!lazer or osu!stable
+    /// score.
+    ///
+    /// **Parameters:**
+    ///   - `lazer`: Whether to use lazer mode calculation.
+    rosu_pp_difficulty_lazer(lazer: bool)
+}
 
 /// Calculate difficulty attributes for the configured settings.
 ///
