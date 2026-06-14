@@ -106,11 +106,10 @@ pub use beatmap::{
 };
 
 // Mods
-pub use mods::ModsHandle as rosu_pp_ModsHandle;
 pub use mods::{
-    rosu_pp_mods_free, rosu_pp_mods_free_string, rosu_pp_mods_from_acronym,
-    rosu_pp_mods_from_bits, rosu_pp_mods_from_json, rosu_pp_mods_from_json_with_mode,
-    rosu_pp_mods_to_bits, rosu_pp_mods_to_string,
+    ModsHandle as rosu_pp_ModsHandle, rosu_pp_mods_free, rosu_pp_mods_free_string,
+    rosu_pp_mods_from_acronym, rosu_pp_mods_from_bits, rosu_pp_mods_from_json,
+    rosu_pp_mods_from_json_with_mode, rosu_pp_mods_to_bits, rosu_pp_mods_to_string,
 };
 
 // Difficulty
@@ -148,29 +147,29 @@ pub use performance::{
     rosu_pp_performance_hardrock_offsets, rosu_pp_performance_hitresult_priority,
     rosu_pp_performance_hp, rosu_pp_performance_large_tick_hits, rosu_pp_performance_lazer,
     rosu_pp_performance_legacy_total_score, rosu_pp_performance_misses, rosu_pp_performance_mods,
-    rosu_pp_performance_n100, rosu_pp_performance_n300, rosu_pp_performance_n50,
-    rosu_pp_performance_n_geki, rosu_pp_performance_n_katu, rosu_pp_performance_new,
+    rosu_pp_performance_n_geki, rosu_pp_performance_n_katu, rosu_pp_performance_n50,
+    rosu_pp_performance_n100, rosu_pp_performance_n300, rosu_pp_performance_new,
     rosu_pp_performance_od, rosu_pp_performance_passed_objects,
     rosu_pp_performance_slider_end_hits, rosu_pp_performance_small_tick_hits,
     rosu_pp_performance_state,
 };
 
 // Score state
-pub use score_state::{rosu_pp_score_state_new, rosu_pp_score_state_total_hits};
+pub use score_state::{
+    ScoreState as rosu_pp_ScoreState, rosu_pp_score_state_new, rosu_pp_score_state_total_hits,
+};
 
 // Strains
-pub use strains::rosu_pp_strains_free;
+pub use strains::{StrainsData as rosu_pp_StrainsData, rosu_pp_strains_free};
 
 // Attributes
 pub use attributes::difficulty::DifficultyAttributes as rosu_pp_DifficultyAttributes;
 pub use attributes::performance::PerformanceAttributes as rosu_pp_PerformanceAttributes;
-pub use score_state::ScoreState as rosu_pp_ScoreState;
-pub use strains::StrainsData as rosu_pp_StrainsData;
 
 // Beatmap attributes (from attributes::beatmap submodule)
 pub use attributes::beatmap::{
+    adjusted::AdjustedBeatmapAttributes as rosu_pp_AdjustedBeatmapAttributes,
     adjusted::rosu_pp_beatmap_attrs_apply_clock_rate,
-    adjusted::AdjustedBeatmapAttributes,
     builder::{
         rosu_pp_beatmap_attrs_builder_ar, rosu_pp_beatmap_attrs_builder_build,
         rosu_pp_beatmap_attrs_builder_clock_rate, rosu_pp_beatmap_attrs_builder_cs,
@@ -179,7 +178,7 @@ pub use attributes::beatmap::{
         rosu_pp_beatmap_attrs_builder_mode, rosu_pp_beatmap_attrs_builder_mods,
         rosu_pp_beatmap_attrs_builder_new, rosu_pp_beatmap_attrs_builder_od,
     },
-    hit_windows::HitWindows,
+    hit_windows::HitWindows as rosu_pp_HitWindows,
     rosu_pp_beatmap_attrs_ar, rosu_pp_beatmap_attrs_clock_rate, rosu_pp_beatmap_attrs_cs,
     rosu_pp_beatmap_attrs_free, rosu_pp_beatmap_attrs_hit_windows, rosu_pp_beatmap_attrs_hp,
     rosu_pp_beatmap_attrs_od,

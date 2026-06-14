@@ -32,7 +32,7 @@ handle!(InspectDifficultyHandle -> InspectDifficulty);
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_inspect_difficulty_free`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_difficulty_inspect_new(
+pub unsafe extern "C" fn rosu_pp_difficulty_inspect_new(
     handle: *mut DifficultyHandle,
 ) -> *mut InspectDifficultyHandle {
     if handle.is_null() {
@@ -54,7 +54,7 @@ pub extern "C" fn rosu_pp_difficulty_inspect_new(
 /// **Memory:** The returned handle is owned by the inspector and will be freed
 /// when the inspector is freed. The caller must NOT free it separately.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_inspect_difficulty_mods(
+pub unsafe extern "C" fn rosu_pp_inspect_difficulty_mods(
     handle: *const InspectDifficultyHandle,
 ) -> *mut ModsHandle {
     let Some(inspect) = handle.checked_by_ref() else {
@@ -72,7 +72,7 @@ macro_rules! getter {
 
     ( $fn:ident -> $field:ident: $ty:ty ) => {
         #[unsafe(no_mangle)]
-        pub extern "C" fn $fn(handle: *const InspectDifficultyHandle, out: *mut $ty) -> FfiResult {
+        pub unsafe extern "C" fn $fn(handle: *const InspectDifficultyHandle, out: *mut $ty) -> FfiResult {
             if handle.is_null() || out.is_null() {
                 return FfiResult::NullPointer;
             }
@@ -89,7 +89,7 @@ macro_rules! getter {
 
     ( @attrs $fn:ident -> $field:ident: $ty:ty ) => {
         #[unsafe(no_mangle)]
-        pub extern "C" fn $fn(
+        pub unsafe extern "C" fn $fn(
             handle: *const InspectDifficultyHandle,
             out: *mut $ty,
             fixed: *mut bool
@@ -130,6 +130,6 @@ getter!(rosu_pp_inspect_difficulty_od -> od: f32);
 /// - `handle`: A handle returned by `rosu_pp_difficulty_inspect`. May be null
 ///   (null is a no-op).
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_inspect_difficulty_free(handle: *mut InspectDifficultyHandle) {
+pub unsafe extern "C" fn rosu_pp_inspect_difficulty_free(handle: *mut InspectDifficultyHandle) {
     handle.drop_handle();
 }

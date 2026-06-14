@@ -40,7 +40,7 @@ handle!(DifficultyHandle -> Difficulty);
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_difficulty_free`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_difficulty_new() -> *mut DifficultyHandle {
+pub unsafe extern "C" fn rosu_pp_difficulty_new() -> *mut DifficultyHandle {
     Box::into_raw(Box::new(DifficultyHandle::from(Difficulty::new())))
 }
 
@@ -58,7 +58,7 @@ pub extern "C" fn rosu_pp_difficulty_new() -> *mut DifficultyHandle {
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_difficulty_free`. The original `handle` remains valid.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_difficulty_clone(
+pub unsafe extern "C" fn rosu_pp_difficulty_clone(
     handle: *const DifficultyHandle,
 ) -> *mut DifficultyHandle {
     let Some(diff) = handle.checked_by_ref() else {
@@ -80,7 +80,7 @@ pub extern "C" fn rosu_pp_difficulty_clone(
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_difficulty_mods(
+pub unsafe extern "C" fn rosu_pp_difficulty_mods(
     handle: *mut DifficultyHandle,
     mods: *const ModsHandle,
 ) -> FfiResult {
@@ -108,7 +108,7 @@ macro_rules! setter {
         ///
         /// **Handle reuse:** The `handle` remains valid after this call.
         #[unsafe(no_mangle)]
-        pub extern "C" fn $fn(
+        pub unsafe extern "C" fn $fn(
             handle: *mut DifficultyHandle,
             $arg: $ty
             $(, $args: $tys )*
@@ -148,7 +148,7 @@ setter!(rosu_pp_difficulty_lazer(lazer: bool));
 /// **Ownership:** This function **does not** consume the `handle`. The caller
 /// must STILL call `rosu_pp_difficulty_free` on the handle.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_difficulty_calculate(
+pub unsafe extern "C" fn rosu_pp_difficulty_calculate(
     handle: *mut DifficultyHandle,
     map: *const BeatmapHandle,
     out: *mut DifficultyAttributes,
@@ -184,7 +184,7 @@ pub extern "C" fn rosu_pp_difficulty_calculate(
 /// **Ownership:** This function **does not** consume the `handle`. The caller
 /// must STILL call `rosu_pp_difficulty_free` on the handle.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_difficulty_checked_calculate(
+pub unsafe extern "C" fn rosu_pp_difficulty_checked_calculate(
     handle: *mut DifficultyHandle,
     map: *const BeatmapHandle,
     out: *mut DifficultyAttributes,
@@ -220,7 +220,7 @@ pub extern "C" fn rosu_pp_difficulty_checked_calculate(
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_strains_free`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_difficulty_strains(
+pub unsafe extern "C" fn rosu_pp_difficulty_strains(
     handle: *mut DifficultyHandle,
     map: *const BeatmapHandle,
 ) -> *mut StrainsData {
@@ -243,6 +243,6 @@ pub extern "C" fn rosu_pp_difficulty_strains(
 /// `rosu_pp_difficulty_gradual_difficulty` or `rosu_pp_difficulty_inspect`
 /// — those functions consume the handle.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_difficulty_free(handle: *mut DifficultyHandle) {
+pub unsafe extern "C" fn rosu_pp_difficulty_free(handle: *mut DifficultyHandle) {
     handle.drop_handle();
 }

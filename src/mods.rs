@@ -55,7 +55,7 @@ fn write_mods(mods: Option<GameMods>, out: *mut *mut ModsHandle) -> FfiResult {
 /// **Memory:** The caller owns the handle written to `out` and must free it
 /// with `rosu_pp_mods_free`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_from_acronym(
+pub unsafe extern "C" fn rosu_pp_mods_from_acronym(
     s: *const ffi::c_char,
     out: *mut *mut ModsHandle,
 ) -> FfiResult {
@@ -102,7 +102,7 @@ fn from_acronym(s: *const ffi::c_char) -> Option<GameMods> {
 /// **Memory:** The caller owns the handle written to `out` and must free it with
 /// `rosu_pp_mods_free`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_from_json_with_mode(
+pub unsafe extern "C" fn rosu_pp_mods_from_json_with_mode(
     s: *const ffi::c_char,
     deny_unknown_fields: bool,
     mode: GameMode,
@@ -144,7 +144,7 @@ pub extern "C" fn rosu_pp_mods_from_json_with_mode(
 /// **Memory:** The caller owns the handle written to `out` and must free it with
 /// `rosu_pp_mods_free`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_from_json(
+pub unsafe extern "C" fn rosu_pp_mods_from_json(
     s: *const ffi::c_char,
     deny_unknown_fields: bool,
     out: *mut *mut ModsHandle,
@@ -187,7 +187,7 @@ fn from_json(s: *const ffi::c_char, seed: GameModsSeed) -> Option<GameMods> {
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_mods_free`.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
+pub unsafe extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
     let mods = GameModsLegacy::from_bits(bits);
 
     Box::into_raw(Box::new(ModsHandle::from(GameMods::from(mods))))
@@ -200,7 +200,7 @@ pub extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
 ///
 /// **Returns:** A u32 bitflag value representing the mods, or 0 if `mods` is null.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
+pub unsafe extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
     match mods.by_ref() {
         GameMods::Lazer(mods) => mods.bits(),
         GameMods::Intermode(mods) => mods.bits(),
@@ -220,7 +220,7 @@ pub extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
 /// **Memory:** The caller **owns** the returned string and must free it using
 /// `rosu_pp_mods_free_string`. Do NOT use standard `free()` on this pointer.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_to_string(mods: *const ModsHandle) -> *mut ffi::c_char {
+pub unsafe extern "C" fn rosu_pp_mods_to_string(mods: *const ModsHandle) -> *mut ffi::c_char {
     if mods.is_null() {
         return ptr::null_mut();
     }
@@ -243,7 +243,7 @@ pub extern "C" fn rosu_pp_mods_to_string(mods: *const ModsHandle) -> *mut ffi::c
 /// **Note:** This is the ONLY correct way to free strings from `mods_to_string`.
 /// Do NOT use standard C `free()` on this pointer.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_free_string(s: *mut ffi::c_char) {
+pub unsafe extern "C" fn rosu_pp_mods_free_string(s: *mut ffi::c_char) {
     if !s.is_null() {
         unsafe { drop(ffi::CString::from_raw(s)) };
     }
@@ -256,6 +256,6 @@ pub extern "C" fn rosu_pp_mods_free_string(s: *mut ffi::c_char) {
 ///   `rosu_pp_mods_from_json`, `rosu_pp_mods_from_json_with_mode`, or
 ///   `rosu_pp_mods_from_bits`. May be null (null is a no-op).
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_mods_free(handle: *mut ModsHandle) {
+pub unsafe extern "C" fn rosu_pp_mods_free(handle: *mut ModsHandle) {
     handle.drop_handle();
 }

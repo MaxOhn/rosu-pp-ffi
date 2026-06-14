@@ -41,7 +41,9 @@ handle!(PerformanceHandle -> Performance<'static>);
 /// `rosu_pp_performance_free`. The `map` handle must remain valid for the
 /// lifetime of this `PerformanceHandle` (since it borrows the beatmap data).
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_performance_new(map: *const BeatmapHandle) -> *mut PerformanceHandle {
+pub unsafe extern "C" fn rosu_pp_performance_new(
+    map: *const BeatmapHandle,
+) -> *mut PerformanceHandle {
     let Some(map) = map.checked_by_ref() else {
         return ptr::null_mut();
     };
@@ -60,7 +62,7 @@ pub extern "C" fn rosu_pp_performance_new(map: *const BeatmapHandle) -> *mut Per
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_performance_mods(
+pub unsafe extern "C" fn rosu_pp_performance_mods(
     handle: *mut PerformanceHandle,
     mods: *const ModsHandle,
 ) -> FfiResult {
@@ -88,7 +90,7 @@ macro_rules! setter {
         ///
         /// **Handle reuse:** The `handle` remains valid after this call.
         #[unsafe(no_mangle)]
-        pub extern "C" fn $fn(
+        pub unsafe extern "C" fn $fn(
             handle: *mut PerformanceHandle,
             $arg: $ty
             $(, $args: $tys )*
@@ -137,7 +139,7 @@ setter!(rosu_pp_performance_legacy_total_score(legacy_total_score: u32));
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_performance_hitresult_priority(
+pub unsafe extern "C" fn rosu_pp_performance_hitresult_priority(
     handle: *mut PerformanceHandle,
     priority: u32,
 ) -> FfiResult {
@@ -176,7 +178,7 @@ pub extern "C" fn rosu_pp_performance_hitresult_priority(
 /// **Ownership:** This function **consumes** the `handle`. The caller must NOT
 /// call `rosu_pp_performance_free` on the handle, nor use it after this call.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_performance_checked_calculate(
+pub unsafe extern "C" fn rosu_pp_performance_checked_calculate(
     handle: *mut PerformanceHandle,
     out: *mut PerformanceAttributes,
 ) -> FfiResult {
@@ -205,7 +207,7 @@ pub extern "C" fn rosu_pp_performance_checked_calculate(
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` is null.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_performance_state(
+pub unsafe extern "C" fn rosu_pp_performance_state(
     handle: *mut PerformanceHandle,
     state: &ScoreState,
 ) -> FfiResult {
@@ -232,7 +234,7 @@ pub extern "C" fn rosu_pp_performance_state(
 /// **Ownership:** This function **consumes** the `handle`. The caller must NOT
 /// call `rosu_pp_performance_free` on the handle, nor use it after this call.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_performance_calculate(
+pub unsafe extern "C" fn rosu_pp_performance_calculate(
     handle: *mut PerformanceHandle,
     out: *mut PerformanceAttributes,
 ) -> FfiResult {
@@ -255,6 +257,6 @@ pub extern "C" fn rosu_pp_performance_calculate(
 /// **Note:** Do NOT call this function if the handle was passed to
 /// `rosu_pp_performance_calculate` — that function consumes the handle.
 #[unsafe(no_mangle)]
-pub extern "C" fn rosu_pp_performance_free(handle: *mut PerformanceHandle) {
+pub unsafe extern "C" fn rosu_pp_performance_free(handle: *mut PerformanceHandle) {
     handle.drop_handle();
 }
