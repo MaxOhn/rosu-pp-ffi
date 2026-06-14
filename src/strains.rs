@@ -13,7 +13,7 @@ use rosu_pp::{
 ///
 /// Suitable to plot the difficulty of a map over time. The `mode` field
 /// indicates which game mode the strains belong to, and the corresponding
-/// strain arrays will be populated.
+/// strain arrays will be populated. All other arrays will be `nullptr`.
 ///
 /// **osu! (mode=0):** `aim`, `aim_no_sliders`, `speed`, `flashlight`
 /// **taiko (mode=1):** `color`, `reading`, `rhythm`, `stamina`, `single_color_stamina`
