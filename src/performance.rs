@@ -33,13 +33,17 @@ handle!(PerformanceHandle -> Performance<'static>);
 /// Create a new performance calculator for the given beatmap.
 ///
 /// **Parameters:**
-/// - `map`: A valid `BeatmapHandle` pointer (must not be null).
+/// - `map`: A valid `BeatmapHandle` pointer (may be null).
 ///
 /// **Returns:** A non-null handle on success, or `NULL` if `map` is null.
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_performance_free`. The `map` handle must remain valid for the
 /// lifetime of this `PerformanceHandle` (since it borrows the beatmap data).
+///
+/// # Safety
+///
+/// `map` must be a valid pointer to a `BeatmapHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_performance_new(
     map: *const BeatmapHandle,
@@ -54,13 +58,17 @@ pub unsafe extern "C" fn rosu_pp_performance_new(
 /// Set the game mods for the performance calculation.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `PerformanceHandle` pointer (must not be null).
+/// - `handle`: A valid `PerformanceHandle` pointer (may be null).
 /// - `mods`: A `ModsHandle` pointer containing the mods to apply.
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `PerformanceHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_performance_mods(
     handle: *mut PerformanceHandle,
@@ -80,7 +88,7 @@ macro_rules! setter {
         /// Configuration setter for the performance calculator.
         ///
         /// **Parameters:**
-        /// - `handle`: A valid `PerformanceHandle` pointer (must not be null).
+        /// - `handle`: A valid `PerformanceHandle` pointer (may be null).
         /// - `$arg`: The primary parameter value.
         // TODO: improve macro stuff
         // $(, `$args`): Additional parameter values.
@@ -89,6 +97,10 @@ macro_rules! setter {
         /// if `handle` is null.
         ///
         /// **Handle reuse:** The `handle` remains valid after this call.
+        ///
+        /// # Safety
+        ///
+        /// `handle` must be a valid pointer to a `PerformanceHandle`, or null.
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $fn(
             handle: *mut PerformanceHandle,
@@ -130,7 +142,7 @@ setter!(rosu_pp_performance_legacy_total_score(legacy_total_score: u32));
 /// Set the priority of hitresults when generating remaining hitresults.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `PerformanceHandle` pointer (must not be null).
+/// - `handle`: A valid `PerformanceHandle` pointer (may be null).
 /// - `priority`: The hitresult priority: `0` for BestCase (prioritize good hitresults),
 ///   `1` for WorstCase (prioritize bad hitresults).
 ///
@@ -138,6 +150,10 @@ setter!(rosu_pp_performance_legacy_total_score(legacy_total_score: u32));
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `PerformanceHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_performance_hitresult_priority(
     handle: *mut PerformanceHandle,
@@ -168,7 +184,7 @@ pub unsafe extern "C" fn rosu_pp_performance_hitresult_priority(
 /// - `handle`: A valid `PerformanceHandle` pointer. **Consumed** by this call.
 ///   The handle must NOT be used or freed after this call.
 /// - `out`: Pointer to a `PerformanceAttributes` struct where results will be
-///   written (must not be null).
+///   written (may be null).
 ///
 /// **Returns:**
 /// - `FfiResult::Ok` — Calculation succeeded.
@@ -177,6 +193,11 @@ pub unsafe extern "C" fn rosu_pp_performance_hitresult_priority(
 ///
 /// **Ownership:** This function **consumes** the `handle`. The caller must NOT
 /// call `rosu_pp_performance_free` on the handle, nor use it after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+/// `out` must point to a valid `PerformanceAttributes` struct, or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_performance_checked_calculate(
     handle: *mut PerformanceHandle,
@@ -201,11 +222,15 @@ pub unsafe extern "C" fn rosu_pp_performance_checked_calculate(
 /// and combo. Use this when you have a complete `ScoreState` struct.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `PerformanceHandle` pointer.
+/// - `handle`: A valid `PerformanceHandle` pointer (may be null).
 /// - `state`: A reference to a `ScoreState` struct with the score data.
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` is null.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `PerformanceHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_performance_state(
     handle: *mut PerformanceHandle,
@@ -226,13 +251,18 @@ pub unsafe extern "C" fn rosu_pp_performance_state(
 /// - `handle`: A valid `PerformanceHandle` pointer. **Consumed** by this call.
 ///   The handle must NOT be used or freed after this call.
 /// - `out`: Pointer to a `PerformanceAttributes` struct where results will be
-///   written (must not be null).
+///   written (may be null).
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` or `out` is null.
 ///
 /// **Ownership:** This function **consumes** the `handle`. The caller must NOT
 /// call `rosu_pp_performance_free` on the handle, nor use it after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+/// `out` must point to a valid `PerformanceAttributes` struct, or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_performance_calculate(
     handle: *mut PerformanceHandle,
@@ -256,6 +286,11 @@ pub unsafe extern "C" fn rosu_pp_performance_calculate(
 ///
 /// **Note:** Do NOT call this function if the handle was passed to
 /// `rosu_pp_performance_calculate` — that function consumes the handle.
+///
+/// # Safety
+///
+/// `handle` must be a null pointer, or a valid handle previously returned by
+/// `rosu_pp_performance_new`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_performance_free(handle: *mut PerformanceHandle) {
     handle.drop_handle();

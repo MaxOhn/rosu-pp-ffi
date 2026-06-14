@@ -30,7 +30,7 @@ handle!(GradualDifficultyHandle -> GradualDifficulty);
 /// **Parameters:**
 /// - `difficulty`: A `DifficultyHandle` pointer. **Consumed** by this call.
 ///   The caller must NOT use or free this handle afterward.
-/// - `map`: A valid `BeatmapHandle` pointer (must not be null).
+/// - `map`: A valid `BeatmapHandle` pointer (may be null).
 ///
 /// **Returns:** A non-null handle on success, or `NULL` if either pointer is null.
 ///
@@ -40,6 +40,11 @@ handle!(GradualDifficultyHandle -> GradualDifficulty);
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_gradual_difficulty_free`.
+///
+/// # Safety
+///
+/// `difficulty` must be a valid pointer to a `DifficultyHandle`, or null.
+/// `map` must be a valid pointer to a `BeatmapHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_gradual_difficulty_new(
     difficulty: *mut DifficultyHandle,
@@ -59,9 +64,9 @@ pub unsafe extern "C" fn rosu_pp_gradual_difficulty_new(
 /// Call this function repeatedly until it returns `FfiResult::Done` (all objects processed).
 ///
 /// **Parameters:**
-/// - `handle`: A valid `GradualDifficultyHandle` pointer (must not be null).
+/// - `handle`: A valid `GradualDifficultyHandle` pointer (may be null).
 /// - `out`: Pointer to a `DifficultyAttributes` struct where results will be
-///   written (must not be null).
+///   written (may be null).
 ///
 /// **Returns:**
 /// - `FfiResult::Ok` — More objects remain; call `next` again.
@@ -70,6 +75,11 @@ pub unsafe extern "C" fn rosu_pp_gradual_difficulty_new(
 ///
 /// **Handle reuse:** The `handle` remains valid after `Ok` and can be used for
 /// subsequent calls.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `GradualDifficultyHandle`, or null.
+/// `out` must point to a valid `DifficultyAttributes` struct, or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_gradual_difficulty_next(
     handle: *mut GradualDifficultyHandle,
@@ -93,6 +103,11 @@ pub unsafe extern "C" fn rosu_pp_gradual_difficulty_next(
 /// **Parameters:**
 /// - `handle`: A handle returned by `rosu_pp_gradual_difficulty_new`. May be
 ///   null (null is a no-op).
+///
+/// # Safety
+///
+/// `handle` must be a null pointer, or a valid handle previously returned by
+/// `rosu_pp_gradual_difficulty_new`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_gradual_difficulty_free(handle: *mut GradualDifficultyHandle) {
     handle.drop_handle();

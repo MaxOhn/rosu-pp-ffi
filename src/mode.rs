@@ -68,6 +68,11 @@ from!(RosuModsGameMode);
 ///
 /// **Memory:** The returned pointer points to static data and does NOT need
 /// to be freed.
+///
+/// # Safety
+///
+/// This function is safe to call from any context. It takes no raw pointer
+/// arguments.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mode_to_str(mode: GameMode) -> *const ffi::c_char {
     let s = match mode {
@@ -89,12 +94,17 @@ pub unsafe extern "C" fn rosu_pp_mode_to_str(mode: GameMode) -> *const ffi::c_ch
 /// - **mania:** `"mania"`, `"mna"`, `"3"`
 ///
 /// **Parameters:**
-/// - `s`: Null-terminated C string containing the mode name (must not be null).
-/// - `out`: Pointer to store the resulting `GameMode` (must not be null).
+/// - `s`: Null-terminated C string containing the mode name (may be null).
+/// - `out`: Pointer to store the resulting `GameMode` (may be null).
 ///
 /// **Returns:** `FfiResult::Ok` on success, `FfiResult::InvalidArgument` if the
 /// string doesn't match any known mode, or `FfiResult::NullPointer` if `s` or
 /// `out` is null.
+///
+/// # Safety
+///
+/// `s` must point to a valid null-terminated UTF-8 string, or be null.
+/// `out` must point to a valid `GameMode`, or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mode_from_str(
     s: *const ffi::c_char,

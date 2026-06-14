@@ -23,9 +23,13 @@ handle!(BeatmapAttributesHandle -> BeatmapAttributes);
 /// Get the approach rate from the beatmap attributes.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesHandle` pointer (may be null).
 ///
 /// **Returns:** The approach rate value, or `0.0` if `handle` is null.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_ar(handle: *const BeatmapAttributesHandle) -> f32 {
     if handle.is_null() {
@@ -38,9 +42,13 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_ar(handle: *const BeatmapAttribut
 /// Get the overall difficulty from the beatmap attributes.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesHandle` pointer (may be null).
 ///
 /// **Returns:** The overall difficulty value, or `0.0` if `handle` is null.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_od(handle: *const BeatmapAttributesHandle) -> f32 {
     if handle.is_null() {
@@ -53,9 +61,13 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_od(handle: *const BeatmapAttribut
 /// Get the circle size from the beatmap attributes.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesHandle` pointer (may be null).
 ///
 /// **Returns:** The circle size value, or `0.0` if `handle` is null.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_cs(handle: *const BeatmapAttributesHandle) -> f32 {
     if handle.is_null() {
@@ -68,9 +80,13 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_cs(handle: *const BeatmapAttribut
 /// Get the HP drain rate from the beatmap attributes.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesHandle` pointer (may be null).
 ///
 /// **Returns:** The HP drain rate value, or `0.0` if `handle` is null.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_hp(handle: *const BeatmapAttributesHandle) -> f32 {
     if handle.is_null() {
@@ -83,9 +99,13 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_hp(handle: *const BeatmapAttribut
 /// Get the clock rate from the beatmap attributes.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesHandle` pointer (may be null).
 ///
 /// **Returns:** The clock rate value, or `0.0` if `handle` is null.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_clock_rate(
     handle: *const BeatmapAttributesHandle,
@@ -100,12 +120,17 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_clock_rate(
 /// Calculate the AR and OD hit windows for the beatmap attributes.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesHandle` pointer (may be null).
 /// - `out`: Pointer to a `HitWindows` struct where results will be written
-///   (must not be null).
+///   (may be null).
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` or `out` is null.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
+/// `out` must point to a valid `HitWindows` struct, or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_hit_windows(
     handle: *const BeatmapAttributesHandle,
@@ -127,6 +152,11 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_hit_windows(
 ///   May be null (null is a no-op).
 ///
 /// After calling this function, the handle must NOT be used again.
+///
+/// # Safety
+///
+/// `handle` must be a null pointer, or a valid handle previously returned by
+/// `rosu_pp_beatmap_attrs_builder_build`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_free(handle: *mut BeatmapAttributesHandle) {
     handle.drop_handle();

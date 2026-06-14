@@ -28,6 +28,11 @@ handle!(BeatmapAttributesBuilderHandle -> BeatmapAttributesBuilder);
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_beatmap_attrs_builder_free`.
+///
+/// # Safety
+///
+/// This function is safe to call from any context. It takes no raw pointer
+/// arguments.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_new() -> *mut BeatmapAttributesBuilderHandle
 {
@@ -40,8 +45,8 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_new() -> *mut BeatmapAttr
 /// convert status).
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
-/// - `map`: A valid `BeatmapHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
+/// - `map`: A valid `BeatmapHandle` pointer (may be null).
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// either pointer is null.
@@ -49,6 +54,11 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_new() -> *mut BeatmapAttr
 /// **Handle reuse:** The `handle` remains valid after this call. Individual
 /// setters (ar, od, cs, hp) can be called after `map` to override specific
 /// values.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
+/// `map` must be a valid pointer to a `BeatmapHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_map(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -66,7 +76,7 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_map(
 /// Override the approach rate.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
 /// - `ar`: The approach rate value.
 /// - `fixed`: If `true`, the value is used as-is with no mod/clock-rate
 ///   adjustment. If `false`, the value may be adjusted by mods and clock rate.
@@ -75,6 +85,10 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_map(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_ar(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -93,7 +107,7 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_ar(
 /// Override the overall difficulty.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
 /// - `od`: The overall difficulty value.
 /// - `fixed`: If `true`, the value is used as-is with no mod/clock-rate
 ///   adjustment. If `false`, the value may be adjusted by mods and clock rate.
@@ -102,6 +116,10 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_ar(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_od(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -120,7 +138,7 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_od(
 /// Override the circle size.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
 /// - `cs`: The circle size value.
 /// - `fixed`: If `true`, the value is used as-is with no mod/clock-rate
 ///   adjustment. If `false`, the value may be adjusted by mods and clock rate.
@@ -129,6 +147,10 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_od(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_cs(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -147,7 +169,7 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_cs(
 /// Override the HP drain rate.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
 /// - `hp`: The HP drain rate value.
 /// - `fixed`: If `true`, the value is used as-is with no mod/clock-rate
 ///   adjustment. If `false`, the value may be adjusted by mods and clock rate.
@@ -156,6 +178,10 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_cs(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_hp(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -174,13 +200,17 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_hp(
 /// Set the game mods for the beatmap attributes calculation.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
 /// - `mods`: A `ModsHandle` pointer containing the mods to apply.
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_mods(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -198,13 +228,17 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_mods(
 /// Set a custom clock rate.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
 /// - `clock_rate`: The clock rate value.
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_clock_rate(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -222,7 +256,7 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_clock_rate(
 /// Set the game mode and convert status.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
 /// - `mode`: The game mode.
 /// - `is_convert`: Whether this is a converted map.
 ///
@@ -230,6 +264,10 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_clock_rate(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_mode(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -251,13 +289,18 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_mode(
 /// rate from the difficulty calculator.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (must not be null).
-/// - `difficulty`: A valid `DifficultyHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
+/// - `difficulty`: A valid `DifficultyHandle` pointer (may be null).
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// either pointer is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
+/// `difficulty` must be a valid pointer to a `DifficultyHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_difficulty(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -287,6 +330,10 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_difficulty(
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_beatmap_attrs_free`.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_build(
     handle: *mut BeatmapAttributesBuilderHandle,
@@ -309,6 +356,11 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_build(
 /// **Note:** Do NOT call this function if the handle was passed to
 /// `rosu_pp_beatmap_attrs_builder_build` — that function consumes the
 /// builder handle.
+///
+/// # Safety
+///
+/// `handle` must be a null pointer, or a valid handle previously returned by
+/// `rosu_pp_beatmap_attrs_builder_new`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_free(
     handle: *mut BeatmapAttributesBuilderHandle,

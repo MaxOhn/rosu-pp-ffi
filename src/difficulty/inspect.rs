@@ -31,6 +31,10 @@ handle!(InspectDifficultyHandle -> InspectDifficulty);
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_inspect_difficulty_free`.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `DifficultyHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_difficulty_inspect_new(
     handle: *mut DifficultyHandle,
@@ -47,12 +51,16 @@ pub unsafe extern "C" fn rosu_pp_difficulty_inspect_new(
 /// Inspect the mods configured on a difficulty calculator.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `InspectDifficultyHandle` pointer (must not be null).
+/// - `handle`: A valid `InspectDifficultyHandle` pointer (may be null).
 ///
 /// **Returns:** A `ModsHandle` pointer on success, or `NULL` if `handle` is null.
 ///
 /// **Memory:** The returned handle is owned by the inspector and will be freed
 /// when the inspector is freed. The caller must NOT free it separately.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to an `InspectDifficultyHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_inspect_difficulty_mods(
     handle: *const InspectDifficultyHandle,
@@ -71,6 +79,20 @@ macro_rules! getter {
     ( $fn:ident -> od: $ty:ty ) => { getter!( @attrs $fn -> od: $ty); };
 
     ( $fn:ident -> $field:ident: $ty:ty ) => {
+        /// Inspect a value from the difficulty calculator.
+        ///
+        /// **Parameters:**
+        /// - `handle`: A valid `InspectDifficultyHandle` pointer (may be null).
+        /// - `out`: Pointer to store the inspected value (may be null).
+        ///
+        /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+        /// if `handle` or `out` is null, or `FfiResult::None` if the value is
+        /// not available.
+        ///
+        /// # Safety
+        ///
+        /// `handle` must be a valid pointer to an `InspectDifficultyHandle`, or null.
+        /// `out` must point to a valid `$ty`, or be null.
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $fn(handle: *const InspectDifficultyHandle, out: *mut $ty) -> FfiResult {
             if handle.is_null() || out.is_null() {
@@ -88,6 +110,22 @@ macro_rules! getter {
     };
 
     ( @attrs $fn:ident -> $field:ident: $ty:ty ) => {
+        /// Inspect a beatmap attribute from the difficulty calculator.
+        ///
+        /// **Parameters:**
+        /// - `handle`: A valid `InspectDifficultyHandle` pointer (may be null).
+        /// - `out`: Pointer to store the inspected value (may be null).
+        /// - `fixed`: Pointer to store whether the value is fixed (may be null).
+        ///
+        /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+        /// if any pointer is null, or `FfiResult::None` if the value is not
+        /// available.
+        ///
+        /// # Safety
+        ///
+        /// `handle` must be a valid pointer to an `InspectDifficultyHandle`, or null.
+        /// `out` must point to a valid `$ty`, or be null.
+        /// `fixed` must point to a valid `bool`, or be null.
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $fn(
             handle: *const InspectDifficultyHandle,
@@ -129,6 +167,11 @@ getter!(rosu_pp_inspect_difficulty_od -> od: f32);
 /// **Parameters:**
 /// - `handle`: A handle returned by `rosu_pp_difficulty_inspect`. May be null
 ///   (null is a no-op).
+///
+/// # Safety
+///
+/// `handle` must be a null pointer, or a valid handle previously returned by
+/// `rosu_pp_difficulty_inspect_new`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_inspect_difficulty_free(handle: *mut InspectDifficultyHandle) {
     handle.drop_handle();

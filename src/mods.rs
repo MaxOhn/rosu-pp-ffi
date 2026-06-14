@@ -54,6 +54,12 @@ fn write_mods(mods: Option<GameMods>, out: *mut *mut ModsHandle) -> FfiResult {
 ///
 /// **Memory:** The caller owns the handle written to `out` and must free it
 /// with `rosu_pp_mods_free`.
+///
+/// # Safety
+///
+/// `s` must point to a valid null-terminated UTF-8 string, or be null.
+/// `out` must point to a valid `*mut *mut ModsHandle` capable of receiving the
+/// written pointer.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mods_from_acronym(
     s: *const ffi::c_char,
@@ -101,6 +107,12 @@ fn from_acronym(s: *const ffi::c_char) -> Option<GameMods> {
 ///
 /// **Memory:** The caller owns the handle written to `out` and must free it with
 /// `rosu_pp_mods_free`.
+///
+/// # Safety
+///
+/// `s` must point to a valid null-terminated UTF-8 string, or be null.
+/// `out` must point to a valid `*mut *mut ModsHandle` capable of receiving the
+/// written pointer.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mods_from_json_with_mode(
     s: *const ffi::c_char,
@@ -143,6 +155,12 @@ pub unsafe extern "C" fn rosu_pp_mods_from_json_with_mode(
 ///
 /// **Memory:** The caller owns the handle written to `out` and must free it with
 /// `rosu_pp_mods_free`.
+///
+/// # Safety
+///
+/// `s` must point to a valid null-terminated UTF-8 string, or be null.
+/// `out` must point to a valid `*mut *mut ModsHandle` capable of receiving the
+/// written pointer.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mods_from_json(
     s: *const ffi::c_char,
@@ -186,6 +204,11 @@ fn from_json(s: *const ffi::c_char, seed: GameModsSeed) -> Option<GameMods> {
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_mods_free`.
+///
+/// # Safety
+///
+/// This function is safe to call from any context. It takes no raw pointer
+/// arguments.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
     let mods = GameModsLegacy::from_bits(bits);
@@ -196,9 +219,13 @@ pub unsafe extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
 /// Convert a mods handle to legacy bitflags.
 ///
 /// **Parameters:**
-/// - `mods`: A valid `ModsHandle` pointer (must not be null).
+/// - `mods`: A valid `ModsHandle` pointer (may be null).
 ///
 /// **Returns:** A u32 bitflag value representing the mods, or 0 if `mods` is null.
+///
+/// # Safety
+///
+/// `mods` must be a valid pointer to a `ModsHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
     match mods.by_ref() {
@@ -213,12 +240,16 @@ pub unsafe extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
 /// Returns the mod acronyms as a string (e.g., `"HDHRDT"`).
 ///
 /// **Parameters:**
-/// - `mods`: A valid `ModsHandle` pointer (must not be null).
+/// - `mods`: A valid `ModsHandle` pointer (may be null).
 ///
 /// **Returns:** A null-terminated C string on success, or `NULL` if `mods` is null.
 ///
 /// **Memory:** The caller **owns** the returned string and must free it using
 /// `rosu_pp_mods_free_string`. Do NOT use standard `free()` on this pointer.
+///
+/// # Safety
+///
+/// `mods` must be a valid pointer to a `ModsHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mods_to_string(mods: *const ModsHandle) -> *mut ffi::c_char {
     if mods.is_null() {
@@ -242,6 +273,11 @@ pub unsafe extern "C" fn rosu_pp_mods_to_string(mods: *const ModsHandle) -> *mut
 ///
 /// **Note:** This is the ONLY correct way to free strings from `mods_to_string`.
 /// Do NOT use standard C `free()` on this pointer.
+///
+/// # Safety
+///
+/// `s` must be a null pointer, or a string previously returned by
+/// `rosu_pp_mods_to_string`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mods_free_string(s: *mut ffi::c_char) {
     if !s.is_null() {
@@ -255,6 +291,11 @@ pub unsafe extern "C" fn rosu_pp_mods_free_string(s: *mut ffi::c_char) {
 /// - `handle`: A handle returned by `rosu_pp_mods_from_acronym`,
 ///   `rosu_pp_mods_from_json`, `rosu_pp_mods_from_json_with_mode`, or
 ///   `rosu_pp_mods_from_bits`. May be null (null is a no-op).
+///
+/// # Safety
+///
+/// `handle` must be a null pointer, or a valid handle previously returned by
+/// a mods constructor function.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mods_free(handle: *mut ModsHandle) {
     handle.drop_handle();

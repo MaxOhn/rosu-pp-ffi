@@ -34,6 +34,12 @@ handle!(BeatmapHandle -> Beatmap);
 ///
 /// **Memory:** On `Ok`, the caller owns the handle written to `out` and must
 /// free it with `rosu_pp_beatmap_free`.
+///
+/// # Safety
+///
+/// `path` must point to a valid null-terminated UTF-8 string, or be null.
+/// `out` must point to a valid `*mut *mut BeatmapHandle` capable of receiving
+/// the written pointer.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_from_path(
     path: *const ffi::c_char,
@@ -78,6 +84,12 @@ pub unsafe extern "C" fn rosu_pp_beatmap_from_path(
 /// **Memory:** On `Ok`, the caller owns the handle written to `out` and must
 /// free it with `rosu_pp_beatmap_free`. The `bytes` buffer is only borrowed
 /// during this call and may be freed immediately after.
+///
+/// # Safety
+///
+/// `bytes` must point to a valid buffer of `len` bytes, or be null if `len` is
+/// 0. `out` must point to a valid `*mut *mut BeatmapHandle` capable of receiving
+/// the written pointer.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_from_bytes(
     bytes: *const u8,
@@ -106,9 +118,13 @@ macro_rules! getter {
         /// Returns the value of the `$field` field from the beatmap.
         ///
         /// **Parameters:**
-        /// - `handle`: A valid beatmap handle pointer (must not be null).
+        /// - `handle`: A valid beatmap handle pointer (may be null).
         ///
         /// **Returns:** The field value, or the type's default value if `handle` is null.
+        ///
+        /// # Safety
+        ///
+        /// `handle` must be a valid pointer to a `BeatmapHandle`, or null.
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $fn(handle: *const BeatmapHandle) -> $ty {
             if handle.is_null() {
@@ -122,9 +138,13 @@ macro_rules! getter {
         /// Returns a computed value derived from the beatmap.
         ///
         /// **Parameters:**
-        /// - `handle`: A valid beatmap handle pointer (must not be null).
+        /// - `handle`: A valid beatmap handle pointer (may be null).
         ///
         /// **Returns:** The computed value, or the type's default value if `handle` is null.
+        ///
+        /// # Safety
+        ///
+        /// `handle` must be a valid pointer to a `BeatmapHandle`, or null.
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $fn(handle: *const BeatmapHandle) -> $ty {
             if handle.is_null() {
@@ -162,11 +182,15 @@ getter!(rosu_pp_beatmap_hit_sound_count(|map: &Beatmap| map.hit_sounds.len()) ->
 /// checks for such cases.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapHandle` pointer (may be null).
 ///
 /// **Returns:** `FfiResult::Ok` if the map is safe to use, or
 /// `FfiResult::TooSuspicious` if the map contains suspicious objects.
 /// Returns `FfiResult::NullPointer` if `handle` is null.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_check_suspicion(
     handle: *const BeatmapHandle,
@@ -188,6 +212,11 @@ pub unsafe extern "C" fn rosu_pp_beatmap_check_suspicion(
 ///   `rosu_pp_beatmap_from_bytes`. May be null (null is a no-op).
 ///
 /// After calling this function, the handle must NOT be used again.
+///
+/// # Safety
+///
+/// `handle` must be a null pointer, or a valid handle previously returned by
+/// `rosu_pp_beatmap_from_path` or `rosu_pp_beatmap_from_bytes`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_free(handle: *mut BeatmapHandle) {
     handle.drop_handle();

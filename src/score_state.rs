@@ -94,6 +94,11 @@ impl From<&ScoreState> for RosuScoreState {
 ///
 /// Initialize the returned struct with the appropriate hit result counts
 /// for the play being evaluated.
+///
+/// # Safety
+///
+/// This function is safe to call from any context. It takes no raw pointer
+/// arguments.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_score_state_new() -> ScoreState {
     ScoreState {
@@ -118,10 +123,14 @@ pub unsafe extern "C" fn rosu_pp_score_state_new() -> ScoreState {
 /// and n_geki (if not osu/taiko/catch) to get the total hit count.
 ///
 /// **Parameters:**
-/// - `state`: A reference to a `ScoreState` struct.
+/// - `state`: A valid `ScoreState` pointer (may be null).
 /// - `mode`: The game mode (0=osu!, 1=taiko, 2=catch, 3=mania).
 ///
 /// **Returns:** The total number of hits, or 0 if `state` is null.
+///
+/// # Safety
+///
+/// `state` must be a valid pointer to a `ScoreState`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_score_state_total_hits(
     state: *const ScoreState,

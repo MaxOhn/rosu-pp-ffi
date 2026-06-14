@@ -32,12 +32,17 @@ impl From<RosuAdjustedBeatmapAttributes> for AdjustedBeatmapAttributes {
 /// and HP remain unchanged (they are not affected by clock rate).
 ///
 /// **Parameters:**
-/// - `handle`: A valid `BeatmapAttributesHandle` pointer (must not be null).
+/// - `handle`: A valid `BeatmapAttributesHandle` pointer (may be null).
 /// - `out`: Pointer to an `AdjustedBeatmapAttributes` struct where results
-///   will be written (must not be null).
+///   will be written (may be null).
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` or `out` is null.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
+/// `out` must point to a valid `AdjustedBeatmapAttributes` struct, or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_beatmap_attrs_apply_clock_rate(
     handle: *const BeatmapAttributesHandle,

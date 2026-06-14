@@ -152,6 +152,16 @@ impl StrainsData {
     }
 }
 
+/// Free a strains handle and release its memory.
+///
+/// **Parameters:**
+/// - `handle`: A handle returned by `rosu_pp_difficulty_strains`. May be
+///   null (null is a no-op).
+///
+/// # Safety
+///
+/// `handle` must be a null pointer, or a valid handle previously returned by
+/// `rosu_pp_difficulty_strains`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_strains_free(handle: *mut StrainsData) {
     if handle.is_null() {

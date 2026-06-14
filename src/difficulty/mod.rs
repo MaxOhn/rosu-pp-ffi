@@ -39,6 +39,11 @@ handle!(DifficultyHandle -> Difficulty);
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_difficulty_free`.
+///
+/// # Safety
+///
+/// This function is safe to call from any context. It takes no raw pointer
+/// arguments.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_difficulty_new() -> *mut DifficultyHandle {
     Box::into_raw(Box::new(DifficultyHandle::from(Difficulty::new())))
@@ -51,12 +56,16 @@ pub unsafe extern "C" fn rosu_pp_difficulty_new() -> *mut DifficultyHandle {
 /// etc.).
 ///
 /// **Parameters:**
-/// - `handle`: A valid `DifficultyHandle` pointer (must not be null).
+/// - `handle`: A valid `DifficultyHandle` pointer (may be null).
 ///
 /// **Returns:** A new handle on success, or `NULL` if `handle` is null.
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_difficulty_free`. The original `handle` remains valid.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `DifficultyHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_difficulty_clone(
     handle: *const DifficultyHandle,
@@ -71,7 +80,7 @@ pub unsafe extern "C" fn rosu_pp_difficulty_clone(
 /// Set the game mods for the difficulty calculation.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `DifficultyHandle` pointer (must not be null).
+/// - `handle`: A valid `DifficultyHandle` pointer (may be null).
 /// - `mods`: A `ModsHandle` pointer containing the mods to apply (may be null
 ///   to clear mods, though this is equivalent to not setting any).
 ///
@@ -79,6 +88,10 @@ pub unsafe extern "C" fn rosu_pp_difficulty_clone(
 /// `handle` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after this call.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `DifficultyHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_difficulty_mods(
     handle: *mut DifficultyHandle,
@@ -98,7 +111,7 @@ macro_rules! setter {
         /// Configuration setter for the difficulty calculator.
         ///
         /// **Parameters:**
-        /// - `handle`: A valid `DifficultyHandle` pointer (must not be null).
+        /// - `handle`: A valid `DifficultyHandle` pointer (may be null).
         /// - `$arg`: The primary parameter value.
         // TODO: improve macro stuff
         // $(, `$args`): Additional parameter values.
@@ -107,6 +120,10 @@ macro_rules! setter {
         /// if `handle` is null.
         ///
         /// **Handle reuse:** The `handle` remains valid after this call.
+        ///
+        /// # Safety
+        ///
+        /// `handle` must be a valid pointer to a `DifficultyHandle`, or null.
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $fn(
             handle: *mut DifficultyHandle,
@@ -138,15 +155,21 @@ setter!(rosu_pp_difficulty_lazer(lazer: bool));
 /// **Parameters:**
 /// - `handle`: A valid `DifficultyHandle` pointer. **Consumed** by this call.
 ///   The handle must NOT be used or freed after this call.
-/// - `map`: A valid `BeatmapHandle` pointer (must not be null).
+/// - `map`: A valid `BeatmapHandle` pointer (may be null).
 /// - `out`: Pointer to a `DifficultyAttributes` struct where results will be written.
-///   (must not be null).
+///   (may be null).
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle`, `map`, or `out` is null.
 ///
 /// **Ownership:** This function **does not** consume the `handle`. The caller
 /// must STILL call `rosu_pp_difficulty_free` on the handle.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `DifficultyHandle`, or null.
+/// `map` must be a valid pointer to a `BeatmapHandle`, or null.
+/// `out` must point to a valid `DifficultyAttributes` struct, or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_difficulty_calculate(
     handle: *mut DifficultyHandle,
@@ -172,9 +195,9 @@ pub unsafe extern "C" fn rosu_pp_difficulty_calculate(
 /// **Parameters:**
 /// - `handle`: A valid `DifficultyHandle` pointer. **Consumed** by this call.
 ///   The handle must NOT be used or freed after this call.
-/// - `map`: A valid `BeatmapHandle` pointer (must not be null).
+/// - `map`: A valid `BeatmapHandle` pointer (may be null).
 /// - `out`: Pointer to a `DifficultyAttributes` struct where results will be written.
-///   (must not be null).
+///   (may be null).
 ///
 /// **Returns:**
 /// - `FfiResult::Ok` — Calculation succeeded.
@@ -183,6 +206,12 @@ pub unsafe extern "C" fn rosu_pp_difficulty_calculate(
 ///
 /// **Ownership:** This function **does not** consume the `handle`. The caller
 /// must STILL call `rosu_pp_difficulty_free` on the handle.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `DifficultyHandle`, or null.
+/// `map` must be a valid pointer to a `BeatmapHandle`, or null.
+/// `out` must point to a valid `DifficultyAttributes` struct, or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_difficulty_checked_calculate(
     handle: *mut DifficultyHandle,
@@ -209,7 +238,7 @@ pub unsafe extern "C" fn rosu_pp_difficulty_checked_calculate(
 /// **Parameters:**
 /// - `handle`: A `DifficultyHandle` pointer. **Consumed** by this call.
 ///   The handle must NOT be used or freed after this call.
-/// - `map`: A valid `BeatmapHandle` pointer (must not be null).
+/// - `map`: A valid `BeatmapHandle` pointer (may be null).
 ///
 /// **Returns:** A non-null `StrainsHandle` on success, or `NULL` if either
 /// pointer is null.
@@ -219,6 +248,11 @@ pub unsafe extern "C" fn rosu_pp_difficulty_checked_calculate(
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_strains_free`.
+///
+/// # Safety
+///
+/// `handle` must be a valid pointer to a `DifficultyHandle`, or null.
+/// `map` must be a valid pointer to a `BeatmapHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_difficulty_strains(
     handle: *mut DifficultyHandle,
@@ -242,6 +276,11 @@ pub unsafe extern "C" fn rosu_pp_difficulty_strains(
 /// **Note:** Do NOT call this function if the handle was passed to
 /// `rosu_pp_difficulty_gradual_difficulty` or `rosu_pp_difficulty_inspect`
 /// — those functions consume the handle.
+///
+/// # Safety
+///
+/// `handle` must be a null pointer, or a valid handle previously returned by
+/// `rosu_pp_difficulty_new` or `rosu_pp_difficulty_clone`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_difficulty_free(handle: *mut DifficultyHandle) {
     handle.drop_handle();
