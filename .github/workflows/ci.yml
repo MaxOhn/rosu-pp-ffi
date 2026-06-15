@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["[0-9]+.[0-9]+.[0-9]+*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - run: cargo fmt --check
+      - run: cargo clippy -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test
+
+  headers:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly-2026-06-04
+          components: rust-docs-json
+      - run: curl --proto '=https' --tlsv1.2 -LsSf \
+          https://github.com/LukeMathWalker/cheadergen/releases/download/0.3.0/cheadergen_cli-installer.sh \
+          | sh
+      - run: bash scripts/generate-headers.sh
+      - uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "chore: regenerate C headers"
+
+  build:
+    needs: [lint, test, headers]
+    if: startsWith(github.ref, 'refs/tags/')
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: librosu_pp_ffi.so
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: librosu_pp_ffi.dylib
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: rosu_pp_ffi.dll
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: "**/*.so,**/*.dylib,**/*.dll"
+          draft: false
+          prerelease: false
