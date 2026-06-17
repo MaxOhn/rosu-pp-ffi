@@ -153,6 +153,8 @@ dependencies = [
 [[package]]
 name = "rosu-pp"
 version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "697808a7bff3a12f18f519c7111de1df1846ae5b937561d56117658626cab978"
 dependencies = [
  "divan",
  "rosu-map",
