@@ -342,6 +342,17 @@ fn to_string_null_handle() {
     }
 }
 
+// --- rosu_pp_mods_to_bits ---
+
+#[test]
+fn to_bits_null_handle() {
+    unsafe {
+        let null_handle: *const rosu_pp_ffi::rosu_pp_ModsHandle = std::ptr::null_mut();
+        let bits = rosu_pp_mods_to_bits(null_handle);
+        assert_eq!(bits, 0);
+    }
+}
+
 // --- Free functions ---
 
 #[test]
