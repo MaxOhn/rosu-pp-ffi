@@ -228,10 +228,11 @@ pub unsafe extern "C" fn rosu_pp_mods_from_bits(bits: u32) -> *mut ModsHandle {
 /// `mods` must be a valid pointer to a `ModsHandle`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mods_to_bits(mods: *const ModsHandle) -> u32 {
-    match mods.by_ref() {
-        GameMods::Lazer(mods) => mods.bits(),
-        GameMods::Intermode(mods) => mods.bits(),
-        GameMods::Legacy(mods) => mods.bits(),
+    match mods.checked_by_ref() {
+        Some(GameMods::Lazer(mods)) => mods.bits(),
+        Some(GameMods::Intermode(mods)) => mods.bits(),
+        Some(GameMods::Legacy(mods)) => mods.bits(),
+        None => 0,
     }
 }
 

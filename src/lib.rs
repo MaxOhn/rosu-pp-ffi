@@ -92,7 +92,9 @@ mod strains;
 pub use error::FfiResult as rosu_pp_FfiResult;
 
 // Mode
-pub use mode::GameMode as rosu_pp_GameMode;
+pub use mode::{
+    GameMode as rosu_pp_GameMode, rosu_pp_mode_from_str, rosu_pp_mode_to_str,
+};
 
 // Beatmap
 pub use beatmap::{

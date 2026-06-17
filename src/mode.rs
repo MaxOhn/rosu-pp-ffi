@@ -76,13 +76,13 @@ from!(RosuModsGameMode);
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_mode_to_str(mode: GameMode) -> *const ffi::c_char {
     let s = match mode {
-        GameMode::Osu => "osu",
-        GameMode::Taiko => "taiko",
-        GameMode::Catch => "catch",
-        GameMode::Mania => "mania",
+        GameMode::Osu => c"osu",
+        GameMode::Taiko => c"taiko",
+        GameMode::Catch => c"catch",
+        GameMode::Mania => c"mania",
     };
 
-    s.as_ptr() as *const ffi::c_char
+    s.as_ptr()
 }
 
 /// Convert a string to a game mode.

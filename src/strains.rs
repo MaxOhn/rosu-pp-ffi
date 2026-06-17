@@ -205,4 +205,6 @@ pub unsafe extern "C" fn rosu_pp_strains_free(handle: *mut StrainsData) {
     drop!(single_color_stamina);
     drop!(movement);
     drop!(strains);
+
+    drop(unsafe { Box::from_raw(handle) })
 }

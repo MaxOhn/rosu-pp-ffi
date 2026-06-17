@@ -34,7 +34,7 @@ pub trait Handle: From<Self::Inner> {
 pub trait HandleRef {
     type InnerRef;
 
-    fn checked_by_ref(self) -> Option<&'static Self::InnerRef>;
+    fn checked_by_ref<'a>(self) -> Option<&'a Self::InnerRef>;
 
     fn by_ref<'a>(self) -> &'a Self::InnerRef;
 }
@@ -60,7 +60,7 @@ pub trait HandleOwned: Sized {
 impl<H: Handle> HandleRef for *const H {
     type InnerRef = H::Inner;
 
-    fn checked_by_ref(self) -> Option<&'static Self::InnerRef> {
+    fn checked_by_ref<'a>(self) -> Option<&'a Self::InnerRef> {
         unsafe { self.cast::<Self::InnerRef>().as_ref() }
     }
 

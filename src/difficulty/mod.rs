@@ -82,7 +82,7 @@ pub unsafe extern "C" fn rosu_pp_difficulty_clone(
 /// **Parameters:**
 /// - `handle`: A valid `DifficultyHandle` pointer (may be null).
 /// - `mods`: A `ModsHandle` pointer containing the mods to apply (may be null
-///   to clear mods, though this is equivalent to not setting any).
+///   to clear mods).
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` is null.
@@ -101,7 +101,13 @@ pub unsafe extern "C" fn rosu_pp_difficulty_mods(
         return FfiResult::NullPointer;
     }
 
-    handle.by_owned(|diff| diff.mods(mods.by_ref().to_owned()));
+    handle.by_owned(|diff| {
+        if let Some(mods) = mods.checked_by_ref() {
+            diff.mods(mods.to_owned())
+        } else {
+            diff.mods(0)
+        }
+    });
 
     FfiResult::Ok
 }

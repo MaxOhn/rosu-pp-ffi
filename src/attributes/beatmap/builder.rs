@@ -201,7 +201,8 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_hp(
 ///
 /// **Parameters:**
 /// - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
-/// - `mods`: A `ModsHandle` pointer containing the mods to apply.
+/// - `mods`: A `ModsHandle` pointer containing the mods to apply (may be null
+///   to clear mods).
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` is null.
@@ -220,7 +221,13 @@ pub unsafe extern "C" fn rosu_pp_beatmap_attrs_builder_mods(
         return FfiResult::NullPointer;
     }
 
-    handle.by_mut().mods(mods.by_ref().to_owned());
+    let handle = handle.by_mut();
+
+    if let Some(mods) = mods.checked_by_ref() {
+        handle.mods(mods.to_owned());
+    } else {
+        handle.mods(0);
+    }
 
     FfiResult::Ok
 }

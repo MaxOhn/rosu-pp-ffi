@@ -68,13 +68,14 @@ pub unsafe extern "C" fn rosu_pp_gradual_performance_new(
 /// **Parameters:**
 /// - `handle`: A valid `GradualPerformanceHandle` pointer (may be null).
 /// - `state`: A reference to a `ScoreState` struct describing the current hit.
+///   (may be null)
 /// - `out`: Pointer to a `PerformanceAttributes` struct where results will be
 ///   written (may be null).
 ///
 /// **Returns:**
 /// - `FfiResult::Ok` — More objects remain; call `next` again.
 /// - `FfiResult::Done` — All objects have been processed. No more calls needed.
-/// - `FfiResult::NullPointer` — `handle` or `out` is null.
+/// - `FfiResult::NullPointer` — `handle`, `state`, or `out` is null.
 ///
 /// **Handle reuse:** The `handle` remains valid after `Ok` and can be used for
 /// subsequent calls.
@@ -82,16 +83,19 @@ pub unsafe extern "C" fn rosu_pp_gradual_performance_new(
 /// # Safety
 ///
 /// `handle` must be a valid pointer to a `GradualPerformanceHandle`, or null.
+/// `state` must be a valid pointer to a `ScoreState`, or null.
 /// `out` must point to a valid `PerformanceAttributes` struct, or be null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_gradual_performance_next(
     handle: *mut GradualPerformanceHandle,
-    state: &ScoreState,
+    state: *const ScoreState,
     out: *mut PerformanceAttributes,
 ) -> FfiResult {
-    if handle.is_null() || out.is_null() {
+    if handle.is_null() || state.is_null() || out.is_null() {
         return FfiResult::NullPointer;
     }
+
+    let state = unsafe { state.as_ref_unchecked() };
 
     let Some(attrs) = handle.by_mut().next(state.into()) else {
         return FfiResult::Done;

@@ -74,7 +74,7 @@ pub unsafe extern "C" fn rosu_pp_performance_mods(
     handle: *mut PerformanceHandle,
     mods: *const ModsHandle,
 ) -> FfiResult {
-    if handle.is_null() {
+    if handle.is_null() || mods.is_null() {
         return FfiResult::NullPointer;
     }
 
@@ -412,23 +412,26 @@ pub unsafe extern "C" fn rosu_pp_performance_checked_calculate(
 ///
 /// **Parameters:**
 /// - `handle`: A valid `PerformanceHandle` pointer (may be null).
-/// - `state`: A reference to a `ScoreState` struct with the score data.
+/// - `state`: A reference to a `ScoreState` struct with the score data. (may be
+///   null)
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
-/// `handle` is null.
+/// `handle` or `state` is null.
 ///
 /// # Safety
 ///
 /// `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+/// `state` must be a valid pointer to a `ScoreState`, or null.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn rosu_pp_performance_state(
     handle: *mut PerformanceHandle,
-    state: &ScoreState,
+    state: *const ScoreState,
 ) -> FfiResult {
-    if handle.is_null() {
+    if handle.is_null() || state.is_null() {
         return FfiResult::NullPointer;
     }
 
+    let state = unsafe { state.as_ref_unchecked() };
     handle.by_owned(|perf| perf.state(state.into()));
 
     FfiResult::Ok

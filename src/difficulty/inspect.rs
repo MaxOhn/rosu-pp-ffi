@@ -17,17 +17,19 @@ pub struct InspectDifficultyHandle(InspectDifficulty);
 
 handle!(InspectDifficultyHandle -> InspectDifficulty);
 
-/// Turn the difficulty calculator into an inspector to view its configured values.
+/// Turn the difficulty calculator into an inspector to view its configured
+/// values.
 ///
 /// **Parameters:**
 /// - `handle`: A `DifficultyHandle` pointer. **Consumed** by this call.
 ///   The handle must NOT be used or freed after this call.
 ///
-/// **Returns:** A non-null `InspectDifficultyHandle` pointer on success, or `NULL`
-/// if `handle` is null.
+/// **Returns:** A non-null `InspectDifficultyHandle` pointer on success, or
+/// `NULL` if `handle` is null.
 ///
-/// **Ownership:** This function **consumes** the `difficulty` handle. The caller
-/// must NOT call `rosu_pp_difficulty_free` on the handle, nor use it after this call.
+/// **Ownership:** This function **consumes** the `difficulty` handle. The
+/// caller must NOT call `rosu_pp_difficulty_free` on the handle, nor use it
+/// after this call.
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
 /// `rosu_pp_inspect_difficulty_free`.
@@ -53,10 +55,11 @@ pub unsafe extern "C" fn rosu_pp_difficulty_inspect_new(
 /// **Parameters:**
 /// - `handle`: A valid `InspectDifficultyHandle` pointer (may be null).
 ///
-/// **Returns:** A `ModsHandle` pointer on success, or `NULL` if `handle` is null.
+/// **Returns:** A `ModsHandle` pointer on success, or `NULL` if `handle` is
+/// null.
 ///
-/// **Memory:** The returned handle is owned by the inspector and will be freed
-/// when the inspector is freed. The caller must NOT free it separately.
+/// **Memory:** The caller owns the returned handle and must free it with
+/// `rosu_pp_mods_free`.
 ///
 /// # Safety
 ///
