@@ -3,7 +3,7 @@
 //! Provides the `StrainsHandle` type and `StrainsData` struct for accessing
 //! strain peak data for all four osu! game modes.
 
-use std::{mem::ManuallyDrop, ptr};
+use std::ptr;
 
 use rosu_pp::{
     any::Strains, catch::CatchStrains, mania::ManiaStrains, osu::OsuStrains, taiko::TaikoStrains,
@@ -59,95 +59,76 @@ impl StrainsData {
                 aim_no_sliders,
                 speed,
                 flashlight,
-            }) => {
-                let len = aim.len();
-
-                StrainsData {
-                    mode: 0,
-                    section_len: OsuStrains::SECTION_LEN,
-                    len,
-                    aim: ManuallyDrop::new(aim.into_boxed_slice()).as_ptr(),
-                    aim_no_sliders: ManuallyDrop::new(aim_no_sliders.into_boxed_slice()).as_ptr(),
-                    speed: ManuallyDrop::new(speed.into_boxed_slice()).as_ptr(),
-                    flashlight: ManuallyDrop::new(flashlight.into_boxed_slice()).as_ptr(),
-                    stamina: ptr::null(),
-                    rhythm: ptr::null(),
-                    color: ptr::null(),
-                    reading: ptr::null(),
-                    single_color_stamina: ptr::null(),
-                    movement: ptr::null(),
-                    strains: ptr::null(),
-                }
-            }
+            }) => StrainsData {
+                mode: 0,
+                section_len: OsuStrains::SECTION_LEN,
+                len: aim.len(),
+                aim: Box::into_raw(aim.into_boxed_slice()).cast(),
+                aim_no_sliders: Box::into_raw(aim_no_sliders.into_boxed_slice()).cast(),
+                speed: Box::into_raw(speed.into_boxed_slice()).cast(),
+                flashlight: Box::into_raw(flashlight.into_boxed_slice()).cast(),
+                stamina: ptr::null(),
+                rhythm: ptr::null(),
+                color: ptr::null(),
+                reading: ptr::null(),
+                single_color_stamina: ptr::null(),
+                movement: ptr::null(),
+                strains: ptr::null(),
+            },
             Strains::Taiko(TaikoStrains {
                 color,
                 reading,
                 rhythm,
                 stamina,
                 single_color_stamina,
-            }) => {
-                let len = color.len();
-
-                StrainsData {
-                    mode: 1,
-                    section_len: TaikoStrains::SECTION_LEN,
-                    len,
-                    aim: ptr::null(),
-                    aim_no_sliders: ptr::null(),
-                    speed: ptr::null(),
-                    flashlight: ptr::null(),
-                    stamina: ManuallyDrop::new(stamina.into_boxed_slice()).as_ptr(),
-                    rhythm: ManuallyDrop::new(rhythm.into_boxed_slice()).as_ptr(),
-                    color: ManuallyDrop::new(color.into_boxed_slice()).as_ptr(),
-                    reading: ManuallyDrop::new(reading.into_boxed_slice()).as_ptr(),
-                    single_color_stamina: ManuallyDrop::new(
-                        single_color_stamina.into_boxed_slice(),
-                    )
-                    .as_ptr(),
-                    movement: ptr::null(),
-                    strains: ptr::null(),
-                }
-            }
-            Strains::Catch(CatchStrains { movement }) => {
-                let len = movement.len();
-
-                StrainsData {
-                    mode: 2,
-                    section_len: CatchStrains::SECTION_LEN,
-                    len,
-                    aim: ptr::null(),
-                    aim_no_sliders: ptr::null(),
-                    speed: ptr::null(),
-                    flashlight: ptr::null(),
-                    stamina: ptr::null(),
-                    rhythm: ptr::null(),
-                    color: ptr::null(),
-                    reading: ptr::null(),
-                    single_color_stamina: ptr::null(),
-                    movement: ManuallyDrop::new(movement.into_boxed_slice()).as_ptr(),
-                    strains: ptr::null(),
-                }
-            }
-            Strains::Mania(ManiaStrains { strains }) => {
-                let len = strains.len();
-
-                StrainsData {
-                    mode: 3,
-                    section_len: ManiaStrains::SECTION_LEN,
-                    len,
-                    aim: ptr::null(),
-                    aim_no_sliders: ptr::null(),
-                    speed: ptr::null(),
-                    flashlight: ptr::null(),
-                    stamina: ptr::null(),
-                    rhythm: ptr::null(),
-                    color: ptr::null(),
-                    reading: ptr::null(),
-                    single_color_stamina: ptr::null(),
-                    movement: ptr::null(),
-                    strains: ManuallyDrop::new(strains.into_boxed_slice()).as_ptr(),
-                }
-            }
+            }) => StrainsData {
+                mode: 1,
+                section_len: TaikoStrains::SECTION_LEN,
+                len: color.len(),
+                aim: ptr::null(),
+                aim_no_sliders: ptr::null(),
+                speed: ptr::null(),
+                flashlight: ptr::null(),
+                stamina: Box::into_raw(stamina.into_boxed_slice()).cast(),
+                rhythm: Box::into_raw(rhythm.into_boxed_slice()).cast(),
+                color: Box::into_raw(color.into_boxed_slice()).cast(),
+                reading: Box::into_raw(reading.into_boxed_slice()).cast(),
+                single_color_stamina: Box::into_raw(single_color_stamina.into_boxed_slice()).cast(),
+                movement: ptr::null(),
+                strains: ptr::null(),
+            },
+            Strains::Catch(CatchStrains { movement }) => StrainsData {
+                mode: 2,
+                section_len: CatchStrains::SECTION_LEN,
+                len: movement.len(),
+                aim: ptr::null(),
+                aim_no_sliders: ptr::null(),
+                speed: ptr::null(),
+                flashlight: ptr::null(),
+                stamina: ptr::null(),
+                rhythm: ptr::null(),
+                color: ptr::null(),
+                reading: ptr::null(),
+                single_color_stamina: ptr::null(),
+                movement: Box::into_raw(movement.into_boxed_slice()).cast(),
+                strains: ptr::null(),
+            },
+            Strains::Mania(ManiaStrains { strains }) => StrainsData {
+                mode: 3,
+                section_len: ManiaStrains::SECTION_LEN,
+                len: strains.len(),
+                aim: ptr::null(),
+                aim_no_sliders: ptr::null(),
+                speed: ptr::null(),
+                flashlight: ptr::null(),
+                stamina: ptr::null(),
+                rhythm: ptr::null(),
+                color: ptr::null(),
+                reading: ptr::null(),
+                single_color_stamina: ptr::null(),
+                movement: ptr::null(),
+                strains: Box::into_raw(strains.into_boxed_slice()).cast(),
+            },
         }
     }
 }
