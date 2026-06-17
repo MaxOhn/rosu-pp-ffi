@@ -26,6 +26,19 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test
 
+  miri:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+      - run: cargo miri setup
+      - run: cargo miri test
+        env:
+          MIRIFLAGS: "-Zmiri-disable-isolation -Zmiri-strict-provenance"
+
   headers:
     runs-on: ubuntu-latest
     permissions:
@@ -45,7 +58,7 @@ jobs:
           commit_message: "chore: regenerate C headers"
 
   build:
-    needs: [lint, test, headers]
+    needs: [lint, test, headers, miri]
     if: startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
