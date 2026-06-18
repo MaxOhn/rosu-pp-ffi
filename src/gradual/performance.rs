@@ -16,15 +16,15 @@ use crate::{
     score_state::ScoreState,
 };
 
-/// Opaque handle to a gradual performance calculator.
-///
-/// Created via `rosu_pp_gradual_performance_new`. Iterate through hit objects
-/// using `rosu_pp_gradual_performance_next` until it returns `FfiResult::Done`.
-///
-/// **Must be freed** with `rosu_pp_gradual_performance_free` when done.
-pub struct GradualPerformanceHandle(GradualPerformance);
-
-handle!(GradualPerformanceHandle -> GradualPerformance);
+handle! {
+    /// Opaque handle to a gradual performance calculator.
+    ///
+    /// Created via `rosu_pp_gradual_performance_new`. Iterate through hit objects
+    /// using `rosu_pp_gradual_performance_next` until it returns `FfiResult::Done`.
+    ///
+    /// **Must be freed** with `rosu_pp_gradual_performance_free` when done.
+    GradualPerformanceHandle -> GradualPerformance
+}
 
 /// Create a new gradual performance calculator.
 ///

@@ -16,19 +16,19 @@ use crate::{
     score_state::ScoreState,
 };
 
-/// Opaque handle to a performance calculator builder.
-///
-/// Created via `rosu_pp_performance_new`. Configure it with setter functions,
-/// then calculate with `rosu_pp_performance_calculate`.
-///
-/// **Builder pattern:** Each setter consumes the handle internally and
-/// returns `FfiResult::Ok`. The handle pointer remains valid and can be
-/// used for subsequent setter calls.
-///
-/// **Must be freed** with `rosu_pp_performance_free` when done.
-pub struct PerformanceHandle(Performance<'static>);
-
-handle!(PerformanceHandle -> Performance<'static>);
+handle! {
+    /// Opaque handle to a performance calculator builder.
+    ///
+    /// Created via `rosu_pp_performance_new`. Configure it with setter functions,
+    /// then calculate with `rosu_pp_performance_calculate`.
+    ///
+    /// **Builder pattern:** Each setter consumes the handle internally and
+    /// returns `FfiResult::Ok`. The handle pointer remains valid and can be
+    /// used for subsequent setter calls.
+    ///
+    /// **Must be freed** with `rosu_pp_performance_free` when done.
+    PerformanceHandle -> Performance<'static>
+}
 
 /// Create a new performance calculator for the given beatmap.
 ///
@@ -59,7 +59,8 @@ pub unsafe extern "C" fn rosu_pp_performance_new(
 ///
 /// **Parameters:**
 /// - `handle`: A valid `PerformanceHandle` pointer (may be null).
-/// - `mods`: A `ModsHandle` pointer containing the mods to apply.
+/// - `mods`: A `ModsHandle` pointer containing the mods to apply (may be null
+///   to clear mods).
 ///
 /// **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
 /// `handle` is null.
@@ -74,11 +75,17 @@ pub unsafe extern "C" fn rosu_pp_performance_mods(
     handle: *mut PerformanceHandle,
     mods: *const ModsHandle,
 ) -> FfiResult {
-    if handle.is_null() || mods.is_null() {
+    if handle.is_null() {
         return FfiResult::NullPointer;
     }
 
-    handle.by_owned(|perf| perf.mods(mods.by_ref().to_owned()));
+    handle.by_owned(|perf| {
+        if let Some(mods) = mods.checked_by_ref() {
+            perf.mods(mods.to_owned())
+        } else {
+            perf.mods(0)
+        }
+    });
 
     FfiResult::Ok
 }

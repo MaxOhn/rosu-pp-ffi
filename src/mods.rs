@@ -16,13 +16,13 @@ use crate::{
     mode::GameMode,
 };
 
-/// Opaque handle to a game mods collection.
-///
-/// Created via `rosu_pp_mods_parse`, `rosu_pp_mods_parse_with_mode`, or
-/// `rosu_pp_mods_from_bits`. Must be freed with `rosu_pp_mods_free`.
-pub struct ModsHandle(GameMods);
-
-handle!(ModsHandle -> GameMods);
+handle! {
+    /// Opaque handle to a game mods collection.
+    ///
+    /// Created via `rosu_pp_mods_parse`, `rosu_pp_mods_parse_with_mode`, or
+    /// `rosu_pp_mods_from_bits`. Must be freed with `rosu_pp_mods_free`.
+    ModsHandle -> GameMods
+}
 
 fn write_mods(mods: Option<GameMods>, out: *mut *mut ModsHandle) -> FfiResult {
     match mods {

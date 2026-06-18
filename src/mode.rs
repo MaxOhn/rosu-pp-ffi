@@ -18,8 +18,9 @@ use crate::error::FfiResult;
 /// - `Catch` = 2 (osu!catch / fruits)
 /// - `Mania` = 3 (osu!mania)
 #[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum GameMode {
+    #[default]
     Osu = 0,
     Taiko = 1,
     Catch = 2,

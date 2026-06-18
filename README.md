@@ -36,7 +36,7 @@ The consumed handle must NOT be freed or used afterward.
 // 1. Load a beatmap
 rosu_pp_BeatmapHandle* map;
 rosu_pp_FfiResult res = rosu_pp_beatmap_from_path("map.osu", &map);
-if (res != ROSU_PP_OK) { /* handle error */ }
+if (res != Ok) { /* handle error */ }
 
 // 2. Configure difficulty calculator
 rosu_pp_DifficultyHandle* diff = rosu_pp_difficulty_new();

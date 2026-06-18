@@ -50,7 +50,7 @@
 //! // 1. Load a beatmap
 //! rosu_pp_BeatmapHandle* map;
 //! rosu_pp_FfiResult res = rosu_pp_beatmap_from_path("path/to/map.osu", &map);
-//! if (res != ROSU_PP_OK) { /* handle error */ }
+//! if (res != Ok) { /* handle error */ }
 //!
 //! // 2. Create a difficulty calculator and configure it
 //! rosu_pp_DifficultyHandle* diff = rosu_pp_difficulty_new();
@@ -92,9 +92,7 @@ mod strains;
 pub use error::FfiResult as rosu_pp_FfiResult;
 
 // Mode
-pub use mode::{
-    GameMode as rosu_pp_GameMode, rosu_pp_mode_from_str, rosu_pp_mode_to_str,
-};
+pub use mode::{GameMode as rosu_pp_GameMode, rosu_pp_mode_from_str, rosu_pp_mode_to_str};
 
 // Beatmap
 pub use beatmap::{

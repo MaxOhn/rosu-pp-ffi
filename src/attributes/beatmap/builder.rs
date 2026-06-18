@@ -12,15 +12,15 @@ use crate::{
     mods::ModsHandle,
 };
 
-/// Opaque handle to a `BeatmapAttributesBuilder`.
-///
-/// Created via `rosu_pp_beatmap_attrs_builder_new`. Configure it with setter
-/// functions, then build with `rosu_pp_beatmap_attrs_builder_build`.
-///
-/// **Must be freed** with `rosu_pp_beatmap_attrs_builder_free` when done.
-pub struct BeatmapAttributesBuilderHandle(BeatmapAttributesBuilder);
-
-handle!(BeatmapAttributesBuilderHandle -> BeatmapAttributesBuilder);
+handle! {
+    /// Opaque handle to a `BeatmapAttributesBuilder`.
+    ///
+    /// Created via `rosu_pp_beatmap_attrs_builder_new`. Configure it with setter
+    /// functions, then build with `rosu_pp_beatmap_attrs_builder_build`.
+    ///
+    /// **Must be freed** with `rosu_pp_beatmap_attrs_builder_free` when done.
+    BeatmapAttributesBuilderHandle -> BeatmapAttributesBuilder
+}
 
 /// Create a new beatmap attributes builder with default settings.
 ///

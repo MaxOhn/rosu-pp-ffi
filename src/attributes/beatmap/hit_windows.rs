@@ -1,8 +1,10 @@
+use std::f64::NAN;
+
 use rosu_pp::model::beatmap::HitWindows as RosuHitWindows;
 
 /// AR and OD hit windows for a beatmap.
 ///
-/// Fields populated depend on the game mode:
+/// Fields populated depend on the game mode (otherwise `NaN`):
 /// - **osu! (0):** `ar`, `od_great`, `od_ok`, `od_meh`
 /// - **taiko (1):** `od_great`, `od_ok`
 /// - **catch (2):** `ar`
@@ -27,12 +29,12 @@ pub struct HitWindows {
 impl From<&RosuHitWindows> for HitWindows {
     fn from(hit_windows: &RosuHitWindows) -> Self {
         HitWindows {
-            ar: hit_windows.ar.unwrap_or(0.0),
-            od_perfect: hit_windows.od_perfect.unwrap_or(0.0),
-            od_great: hit_windows.od_great.unwrap_or(0.0),
-            od_good: hit_windows.od_good.unwrap_or(0.0),
-            od_ok: hit_windows.od_ok.unwrap_or(0.0),
-            od_meh: hit_windows.od_meh.unwrap_or(0.0),
+            ar: hit_windows.ar.unwrap_or(NAN),
+            od_perfect: hit_windows.od_perfect.unwrap_or(NAN),
+            od_great: hit_windows.od_great.unwrap_or(NAN),
+            od_good: hit_windows.od_good.unwrap_or(NAN),
+            od_ok: hit_windows.od_ok.unwrap_or(NAN),
+            od_meh: hit_windows.od_meh.unwrap_or(NAN),
         }
     }
 }

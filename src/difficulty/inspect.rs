@@ -9,13 +9,13 @@ use crate::{
     mods::ModsHandle,
 };
 
-/// Opaque handle to an inspected difficulty calculator.
-///
-/// Created via `rosu_pp_difficulty_inspect`. Use getter functions to inspect
-/// the configured values.
-pub struct InspectDifficultyHandle(InspectDifficulty);
-
-handle!(InspectDifficultyHandle -> InspectDifficulty);
+handle! {
+    /// Opaque handle to an inspected difficulty calculator.
+    ///
+    /// Created via `rosu_pp_difficulty_inspect`. Use getter functions to inspect
+    /// the configured values.
+    InspectDifficultyHandle -> InspectDifficulty
+}
 
 /// Turn the difficulty calculator into an inspector to view its configured
 /// values.

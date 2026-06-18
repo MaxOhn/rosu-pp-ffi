@@ -10,15 +10,15 @@ pub mod adjusted;
 pub mod builder;
 pub mod hit_windows;
 
-/// Opaque handle to a `BeatmapAttributes` result.
-///
-/// Created via `rosu_pp_beatmap_attrs_builder_build`. Query it with getter
-/// functions and `rosu_pp_beatmap_attrs_hit_windows`.
-///
-/// **Must be freed** with `rosu_pp_beatmap_attrs_free` when done.
-pub struct BeatmapAttributesHandle(BeatmapAttributes);
-
-handle!(BeatmapAttributesHandle -> BeatmapAttributes);
+handle! {
+    /// Opaque handle to a `BeatmapAttributes` result.
+    ///
+    /// Created via `rosu_pp_beatmap_attrs_builder_build`. Query it with getter
+    /// functions and `rosu_pp_beatmap_attrs_hit_windows`.
+    ///
+    /// **Must be freed** with `rosu_pp_beatmap_attrs_free` when done.
+    BeatmapAttributesHandle -> BeatmapAttributes
+}
 
 /// Get the approach rate from the beatmap attributes.
 ///

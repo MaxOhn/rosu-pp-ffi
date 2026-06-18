@@ -5,12 +5,12 @@ mod common;
 use common::{Mode, beatmap_bytes, beatmap_path};
 
 use rosu_pp_ffi::{
-    rosu_pp_FfiResult, rosu_pp_beatmap_ar, rosu_pp_beatmap_bpm, rosu_pp_beatmap_cs,
-    rosu_pp_beatmap_free, rosu_pp_beatmap_from_bytes, rosu_pp_beatmap_from_path,
-    rosu_pp_beatmap_hit_object_count, rosu_pp_beatmap_hp, rosu_pp_beatmap_is_convert,
-    rosu_pp_beatmap_mode, rosu_pp_beatmap_od, rosu_pp_beatmap_slider_multiplier,
-    rosu_pp_beatmap_slider_tick_rate, rosu_pp_beatmap_stack_leniency,
-    rosu_pp_beatmap_timing_point_count, rosu_pp_beatmap_version,
+    rosu_pp_FfiResult, rosu_pp_GameMode, rosu_pp_beatmap_ar, rosu_pp_beatmap_bpm,
+    rosu_pp_beatmap_cs, rosu_pp_beatmap_free, rosu_pp_beatmap_from_bytes,
+    rosu_pp_beatmap_from_path, rosu_pp_beatmap_hit_object_count, rosu_pp_beatmap_hp,
+    rosu_pp_beatmap_is_convert, rosu_pp_beatmap_mode, rosu_pp_beatmap_od,
+    rosu_pp_beatmap_slider_multiplier, rosu_pp_beatmap_slider_tick_rate,
+    rosu_pp_beatmap_stack_leniency, rosu_pp_beatmap_timing_point_count, rosu_pp_beatmap_version,
 };
 
 #[test]
@@ -45,7 +45,7 @@ fn from_path_osu() {
         assert!(version >= 14);
 
         let mode = rosu_pp_beatmap_mode(map_handle);
-        assert_eq!(mode, 0); // osu!
+        assert_eq!(mode, rosu_pp_GameMode::Osu);
 
         let ar = rosu_pp_beatmap_ar(map_handle);
         assert!(ar > 0.0);
@@ -93,7 +93,7 @@ fn from_path_taiko() {
         assert_eq!(result, rosu_pp_FfiResult::Ok);
 
         let mode = rosu_pp_beatmap_mode(map_handle);
-        assert_eq!(mode, 1); // taiko
+        assert_eq!(mode, rosu_pp_GameMode::Taiko);
 
         rosu_pp_beatmap_free(map_handle);
     }
@@ -108,7 +108,7 @@ fn from_path_catch() {
         assert_eq!(result, rosu_pp_FfiResult::Ok);
 
         let mode = rosu_pp_beatmap_mode(map_handle);
-        assert_eq!(mode, 2); // catch
+        assert_eq!(mode, rosu_pp_GameMode::Catch);
 
         rosu_pp_beatmap_free(map_handle);
     }
@@ -123,7 +123,7 @@ fn from_path_mania() {
         assert_eq!(result, rosu_pp_FfiResult::Ok);
 
         let mode = rosu_pp_beatmap_mode(map_handle);
-        assert_eq!(mode, 3); // mania
+        assert_eq!(mode, rosu_pp_GameMode::Mania);
 
         rosu_pp_beatmap_free(map_handle);
     }
@@ -147,7 +147,7 @@ fn from_bytes_osu() {
         assert_eq!(result, rosu_pp_FfiResult::Ok);
 
         let mode = rosu_pp_beatmap_mode(handle);
-        assert_eq!(mode, 0); // osu!
+        assert_eq!(mode, rosu_pp_GameMode::Osu);
 
         rosu_pp_beatmap_free(handle);
     }

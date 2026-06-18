@@ -15,15 +15,15 @@ use crate::{
     handle::{HandleMut, HandleOwned, HandleRef},
 };
 
-/// Opaque handle to a gradual difficulty calculator.
-///
-/// Created via `rosu_pp_gradual_difficulty_new`. Iterate through hit objects
-/// using `rosu_pp_gradual_difficulty_next` until it returns `FfiResult::Done`.
-///
-/// **Must be freed** with `rosu_pp_gradual_difficulty_free` when done.
-pub struct GradualDifficultyHandle(GradualDifficulty);
-
-handle!(GradualDifficultyHandle -> GradualDifficulty);
+handle! {
+    /// Opaque handle to a gradual difficulty calculator.
+    ///
+    /// Created via `rosu_pp_gradual_difficulty_new`. Iterate through hit objects
+    /// using `rosu_pp_gradual_difficulty_next` until it returns `FfiResult::Done`.
+    ///
+    /// **Must be freed** with `rosu_pp_gradual_difficulty_free` when done.
+    GradualDifficultyHandle -> GradualDifficulty
+}
 
 /// Create a new gradual difficulty calculator.
 ///

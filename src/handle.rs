@@ -1,7 +1,13 @@
 use std::mem;
 
 macro_rules! handle {
-    ( $name:ident -> $inner:ty ) => {
+    (
+        $( #[ $meta:meta ] )*
+        $name:ident -> $inner:ty
+    ) => {
+        $( #[ $meta ] )*
+        pub struct $name($inner);
+
         impl From<$inner> for $name {
             fn from(inner: $inner) -> Self {
                 Self(inner)

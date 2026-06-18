@@ -10,15 +10,16 @@ use rosu_pp::Beatmap;
 use crate::{
     error::FfiResult,
     handle::{HandleOwned, HandleRef},
+    rosu_pp_GameMode,
 };
 
-/// Opaque handle to a loaded osu! beatmap.
-///
-/// Created via `rosu_pp_beatmap_from_path` or `rosu_pp_beatmap_from_bytes`.
-/// Must be freed with `rosu_pp_beatmap_free` when no longer needed.
-pub struct BeatmapHandle(Beatmap);
-
-handle!(BeatmapHandle -> Beatmap);
+handle! {
+    /// Opaque handle to a loaded osu! beatmap.
+    ///
+    /// Created via `rosu_pp_beatmap_from_path` or `rosu_pp_beatmap_from_bytes`.
+    /// Must be freed with `rosu_pp_beatmap_free` when no longer needed.
+    BeatmapHandle -> Beatmap
+}
 
 /// Load a beatmap from a file path.
 ///
@@ -157,7 +158,7 @@ macro_rules! getter {
 }
 
 getter!(rosu_pp_beatmap_version(version) -> i32);
-getter!(rosu_pp_beatmap_mode(|map: &Beatmap| map.mode as i32) -> i32);
+getter!(rosu_pp_beatmap_mode(|map: &Beatmap| map.mode.into()) -> rosu_pp_GameMode);
 getter!(rosu_pp_beatmap_ar(ar) -> f32);
 getter!(rosu_pp_beatmap_cs(cs) -> f32);
 getter!(rosu_pp_beatmap_hp(hp) -> f32);

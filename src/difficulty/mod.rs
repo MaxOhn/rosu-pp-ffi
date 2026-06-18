@@ -19,19 +19,19 @@ use crate::{
     strains::StrainsData,
 };
 
-/// Opaque handle to a difficulty calculator builder.
-///
-/// Created via `rosu_pp_difficulty_new`. Configure it with setter functions,
-/// then calculate with `rosu_pp_difficulty_calculate`.
-///
-/// **Builder pattern:** Each setter consumes the handle internally and
-/// returns `FfiResult::Ok`. The handle pointer remains valid and can be
-/// used for subsequent setter calls.
-///
-/// **Must be freed** with `rosu_pp_difficulty_free` when done.
-pub struct DifficultyHandle(Difficulty);
-
-handle!(DifficultyHandle -> Difficulty);
+handle! {
+    /// Opaque handle to a difficulty calculator builder.
+    ///
+    /// Created via `rosu_pp_difficulty_new`. Configure it with setter functions,
+    /// then calculate with `rosu_pp_difficulty_calculate`.
+    ///
+    /// **Builder pattern:** Each setter consumes the handle internally and
+    /// returns `FfiResult::Ok`. The handle pointer remains valid and can be
+    /// used for subsequent setter calls.
+    ///
+    /// **Must be freed** with `rosu_pp_difficulty_free` when done.
+    DifficultyHandle -> Difficulty
+}
 
 /// Create a new difficulty calculator with default settings.
 ///
@@ -242,8 +242,7 @@ setter! {
 /// Calculate difficulty attributes for the configured settings.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `DifficultyHandle` pointer. **Consumed** by this call.
-///   The handle must NOT be used or freed after this call.
+/// - `handle`: A valid `DifficultyHandle` pointer (may be null).
 /// - `map`: A valid `BeatmapHandle` pointer (may be null).
 /// - `out`: Pointer to a `DifficultyAttributes` struct where results will be written.
 ///   (may be null).
@@ -282,8 +281,7 @@ pub unsafe extern "C" fn rosu_pp_difficulty_calculate(
 /// hit objects first. If the map is too suspicious, returns `FfiResult::TooSuspicious`.
 ///
 /// **Parameters:**
-/// - `handle`: A valid `DifficultyHandle` pointer. **Consumed** by this call.
-///   The handle must NOT be used or freed after this call.
+/// - `handle`: A valid `DifficultyHandle` pointer (may be null).
 /// - `map`: A valid `BeatmapHandle` pointer (may be null).
 /// - `out`: Pointer to a `DifficultyAttributes` struct where results will be written.
 ///   (may be null).
