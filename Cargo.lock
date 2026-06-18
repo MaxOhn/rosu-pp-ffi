@@ -21,6 +21,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "cheadergen"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b15d16c859c2a2d9e3535a1082e89860fa7862104fd3a809a7671936fc441d1e"
+dependencies = [
+ "cheadergen_macros",
+]
+
+[[package]]
+name = "cheadergen_macros"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0187afa094a7b9557779929f538645d076804b249f0fa22d382381eecd7edbaf"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "clap"
 version = "4.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -165,6 +185,7 @@ dependencies = [
 name = "rosu-pp-ffi"
 version = "0.1.0"
 dependencies = [
+ "cheadergen",
  "rosu-map",
  "rosu-mods",
  "rosu-pp",

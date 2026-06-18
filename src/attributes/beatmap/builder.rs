@@ -19,6 +19,7 @@ handle! {
     /// functions, then build with `rosu_pp_beatmap_attrs_builder_build`.
     ///
     /// **Must be freed** with `rosu_pp_beatmap_attrs_builder_free` when done.
+    #[cheadergen::config(rename = "rosu_pp_BeatmapAttributesBuilderHandle")]
     BeatmapAttributesBuilderHandle -> BeatmapAttributesBuilder
 }
 

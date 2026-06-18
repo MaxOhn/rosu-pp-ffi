@@ -21,6 +21,7 @@ handle! {
     ///
     /// Created via `rosu_pp_mods_parse`, `rosu_pp_mods_parse_with_mode`, or
     /// `rosu_pp_mods_from_bits`. Must be freed with `rosu_pp_mods_free`.
+    #[cheadergen::config(rename = "rosu_pp_ModsHandle")]
     ModsHandle -> GameMods
 }
 

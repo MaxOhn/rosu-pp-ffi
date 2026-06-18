@@ -14,6 +14,7 @@ handle! {
     ///
     /// Created via `rosu_pp_difficulty_inspect`. Use getter functions to inspect
     /// the configured values.
+    #[cheadergen::config(rename = "rosu_pp_InspectDifficultyHandle")]
     InspectDifficultyHandle -> InspectDifficulty
 }
 

@@ -18,13 +18,21 @@ use std::fmt;
 ///   calculation unreliable (only returned by `checked_*` functions).
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[cheadergen::config(rename = "rosu_pp_FfiResult")]
 pub enum FfiResult {
+    #[cheadergen(rename = "rosu_pp_FfiResult_Ok")]
     Ok = 0,
+    #[cheadergen(rename = "rosu_pp_FfiResult_Done")]
     Done = 1,
+    #[cheadergen(rename = "rosu_pp_FfiResult_ParseError")]
     ParseError = 2,
+    #[cheadergen(rename = "rosu_pp_FfiResult_NullPointer")]
     NullPointer = 3,
+    #[cheadergen(rename = "rosu_pp_FfiResult_InvalidArgument")]
     InvalidArgument = 4,
+    #[cheadergen(rename = "rosu_pp_FfiResult_TooSuspicious")]
     TooSuspicious = 5,
+    #[cheadergen(rename = "rosu_pp_FfiResult_None")]
     None = 6,
 }
 

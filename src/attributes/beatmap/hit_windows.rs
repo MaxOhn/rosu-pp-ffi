@@ -1,5 +1,3 @@
-use std::f64::NAN;
-
 use rosu_pp::model::beatmap::HitWindows as RosuHitWindows;
 
 /// AR and OD hit windows for a beatmap.
@@ -29,12 +27,12 @@ pub struct HitWindows {
 impl From<&RosuHitWindows> for HitWindows {
     fn from(hit_windows: &RosuHitWindows) -> Self {
         HitWindows {
-            ar: hit_windows.ar.unwrap_or(NAN),
-            od_perfect: hit_windows.od_perfect.unwrap_or(NAN),
-            od_great: hit_windows.od_great.unwrap_or(NAN),
-            od_good: hit_windows.od_good.unwrap_or(NAN),
-            od_ok: hit_windows.od_ok.unwrap_or(NAN),
-            od_meh: hit_windows.od_meh.unwrap_or(NAN),
+            ar: hit_windows.ar.unwrap_or(f64::NAN),
+            od_perfect: hit_windows.od_perfect.unwrap_or(f64::NAN),
+            od_great: hit_windows.od_great.unwrap_or(f64::NAN),
+            od_good: hit_windows.od_good.unwrap_or(f64::NAN),
+            od_ok: hit_windows.od_ok.unwrap_or(f64::NAN),
+            od_meh: hit_windows.od_meh.unwrap_or(f64::NAN),
         }
     }
 }

@@ -30,6 +30,7 @@ handle! {
     /// used for subsequent setter calls.
     ///
     /// **Must be freed** with `rosu_pp_difficulty_free` when done.
+    #[cheadergen::config(rename = "rosu_pp_DifficultyHandle")]
     DifficultyHandle -> Difficulty
 }
 

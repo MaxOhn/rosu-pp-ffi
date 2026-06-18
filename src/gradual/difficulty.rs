@@ -22,6 +22,7 @@ handle! {
     /// using `rosu_pp_gradual_difficulty_next` until it returns `FfiResult::Done`.
     ///
     /// **Must be freed** with `rosu_pp_gradual_difficulty_free` when done.
+    #[cheadergen::config(rename = "rosu_pp_GradualDifficultyHandle")]
     GradualDifficultyHandle -> GradualDifficulty
 }
 

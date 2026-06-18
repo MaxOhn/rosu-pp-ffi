@@ -18,6 +18,7 @@ handle! {
     ///
     /// Created via `rosu_pp_beatmap_from_path` or `rosu_pp_beatmap_from_bytes`.
     /// Must be freed with `rosu_pp_beatmap_free` when no longer needed.
+    #[cheadergen::config(rename = "rosu_pp_BeatmapHandle")]
     BeatmapHandle -> Beatmap
 }
 

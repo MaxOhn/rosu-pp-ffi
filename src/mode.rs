@@ -19,11 +19,16 @@ use crate::error::FfiResult;
 /// - `Mania` = 3 (osu!mania)
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[cheadergen::config(rename = "rosu_pp_GameMode")]
 pub enum GameMode {
     #[default]
+    #[cheadergen(rename = "rosu_pp_GameMode_Osu")]
     Osu = 0,
+    #[cheadergen(rename = "rosu_pp_GameMode_Taiko")]
     Taiko = 1,
+    #[cheadergen(rename = "rosu_pp_GameMode_Catch")]
     Catch = 2,
+    #[cheadergen(rename = "rosu_pp_GameMode_Mania")]
     Mania = 3,
 }
 

@@ -23,6 +23,7 @@ handle! {
     /// using `rosu_pp_gradual_performance_next` until it returns `FfiResult::Done`.
     ///
     /// **Must be freed** with `rosu_pp_gradual_performance_free` when done.
+    #[cheadergen::config(rename = "rosu_pp_GradualPerformanceHandle")]
     GradualPerformanceHandle -> GradualPerformance
 }
 

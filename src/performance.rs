@@ -27,6 +27,7 @@ handle! {
     /// used for subsequent setter calls.
     ///
     /// **Must be freed** with `rosu_pp_performance_free` when done.
+    #[cheadergen::config(rename = "rosu_pp_PerformanceHandle")]
     PerformanceHandle -> Performance<'static>
 }
 
@@ -38,8 +39,8 @@ handle! {
 /// **Returns:** A non-null handle on success, or `NULL` if `map` is null.
 ///
 /// **Memory:** The caller owns the returned handle and must free it with
-/// `rosu_pp_performance_free`. The `map` handle must remain valid for the
-/// lifetime of this `PerformanceHandle` (since it borrows the beatmap data).
+/// `rosu_pp_performance_free`. The `map` handle **must** remain valid for the
+/// lifetime of this `PerformanceHandle`.
 ///
 /// # Safety
 ///

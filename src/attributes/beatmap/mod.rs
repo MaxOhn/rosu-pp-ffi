@@ -17,6 +17,7 @@ handle! {
     /// functions and `rosu_pp_beatmap_attrs_hit_windows`.
     ///
     /// **Must be freed** with `rosu_pp_beatmap_attrs_free` when done.
+    #[cheadergen::config(rename = "rosu_pp_BeatmapAttributesHandle")]
     BeatmapAttributesHandle -> BeatmapAttributes
 }
 
