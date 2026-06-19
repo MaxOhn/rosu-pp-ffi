@@ -49,10 +49,8 @@ jobs:
         with:
           toolchain: nightly-2026-06-04
           components: rust-docs-json
-      - run: curl --proto '=https' --tlsv1.2 -LsSf \
-          https://github.com/LukeMathWalker/cheadergen/releases/download/0.3.0/cheadergen_cli-installer.sh \
-          | sh
-      - run: bash scripts/generate-headers.sh
+      - run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/LukeMathWalker/cheadergen/releases/download/0.3.0/cheadergen_cli-installer.sh | sh
+      - run: export PATH="$HOME/.cargo/bin:$PATH" && bash scripts/generate-headers.sh
       - uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: regenerate C headers"

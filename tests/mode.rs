@@ -3,7 +3,7 @@
 mod common;
 
 use rosu_pp_ffi::{
-    rosu_pp_GameMode, rosu_pp_FfiResult, rosu_pp_mode_from_str, rosu_pp_mode_to_str,
+    rosu_pp_FfiResult, rosu_pp_GameMode, rosu_pp_mode_from_str, rosu_pp_mode_to_str,
 };
 
 #[test]
