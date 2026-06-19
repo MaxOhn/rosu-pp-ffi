@@ -7,9 +7,10 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 6 * * *'  # daily at 6am UTC — used only by the miri job
 
 jobs:
+  # Lint: formatting and clippy checks. Runs on every push/PR.
   lint:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -22,6 +23,7 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy -- -D warnings
 
+  # Integration tests: runs the full Rust test suite. Runs on every push/PR.
   test:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -30,6 +32,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test
 
+  # Miri (UB checker): runs on schedule only (daily 6am UTC).
+  # Skips if no new commits since the last successful run.
+  # Does NOT run on push/PR to avoid blocking workflows with its 30+ min runtime.
   miri:
     if: github.repository_owner == 'MaxOhn' && github.event_name == 'schedule'
     runs-on: ubuntu-latest
@@ -56,6 +61,8 @@ jobs:
         if: steps.check.outputs.skip != 'true' && success()
         run: git rev-parse HEAD > .last-miri-run
 
+  # Header generation: regenerates rosu_pp.h via cheadergen.
+  # Auto-commits changes if the header differs. Runs on every push/PR.
   headers:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -73,6 +80,8 @@ jobs:
         with:
           commit_message: "chore: regenerate C headers"
 
+  # C smoke test: compiles tests/c/smoke.c with strict warnings under C99/C11/C17.
+  # Verifies the generated header has the expected API shape. Runs on every push/PR.
   smoke-test:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -83,6 +92,8 @@ jobs:
       - run: cc -std=c11 -Wall -Wextra -Wpedantic -fsyntax-only -I include tests/c/smoke.c
       - run: cc -std=c17 -Wall -Wextra -Wpedantic -fsyntax-only -I include tests/c/smoke.c
 
+  # Cross-platform build: builds the cdylib/staticlib for each target.
+  # Only runs on tag pushes (releases).
   build:
     needs: [lint, test, headers, smoke-test]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
@@ -110,6 +121,7 @@ jobs:
           name: ${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.artifact }}
 
+  # Release: publishes artifacts to GitHub Releases.
   release:
     needs: build
     runs-on: ubuntu-latest
