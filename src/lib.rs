@@ -50,7 +50,7 @@
 //! // 1. Load a beatmap
 //! rosu_pp_BeatmapHandle* map;
 //! rosu_pp_FfiResult res = rosu_pp_beatmap_from_path("path/to/map.osu", &map);
-//! if (res != Ok) { /* handle error */ }
+//! if (res != rosu_pp_FfiResult_Ok) { /* handle error */ }
 //!
 //! // 2. Create a difficulty calculator and configure it
 //! rosu_pp_DifficultyHandle* diff = rosu_pp_difficulty_new();
