@@ -123,7 +123,8 @@ pub use difficulty::inspect::{
     rosu_pp_inspect_difficulty_passed_objects,
 };
 pub use difficulty::{
-    rosu_pp_difficulty_ar, rosu_pp_difficulty_calculate, rosu_pp_difficulty_checked_calculate,
+    DifficultyHandle as rosu_pp_DifficultyHandle, rosu_pp_difficulty_ar,
+    rosu_pp_difficulty_calculate, rosu_pp_difficulty_checked_calculate,
     rosu_pp_difficulty_clock_rate, rosu_pp_difficulty_clone, rosu_pp_difficulty_cs,
     rosu_pp_difficulty_free, rosu_pp_difficulty_hardrock_offsets, rosu_pp_difficulty_hp,
     rosu_pp_difficulty_lazer, rosu_pp_difficulty_mods, rosu_pp_difficulty_new,
@@ -142,11 +143,12 @@ pub use gradual::performance::{
 
 // Performance
 pub use performance::{
-    rosu_pp_performance_accuracy, rosu_pp_performance_ar, rosu_pp_performance_calculate,
-    rosu_pp_performance_checked_calculate, rosu_pp_performance_clock_rate,
-    rosu_pp_performance_combo, rosu_pp_performance_cs, rosu_pp_performance_free,
-    rosu_pp_performance_hardrock_offsets, rosu_pp_performance_hitresult_priority,
-    rosu_pp_performance_hp, rosu_pp_performance_large_tick_hits, rosu_pp_performance_lazer,
+    PerformanceHandle as rosu_pp_PerformanceHandle, rosu_pp_performance_accuracy,
+    rosu_pp_performance_ar, rosu_pp_performance_calculate, rosu_pp_performance_checked_calculate,
+    rosu_pp_performance_clock_rate, rosu_pp_performance_combo, rosu_pp_performance_cs,
+    rosu_pp_performance_free, rosu_pp_performance_hardrock_offsets,
+    rosu_pp_performance_hitresult_priority, rosu_pp_performance_hp,
+    rosu_pp_performance_large_tick_hits, rosu_pp_performance_lazer,
     rosu_pp_performance_legacy_total_score, rosu_pp_performance_misses, rosu_pp_performance_mods,
     rosu_pp_performance_n_geki, rosu_pp_performance_n_katu, rosu_pp_performance_n50,
     rosu_pp_performance_n100, rosu_pp_performance_n300, rosu_pp_performance_new,

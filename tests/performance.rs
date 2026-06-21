@@ -5,8 +5,9 @@ mod common;
 use common::{Mode, beatmap_path};
 
 use rosu_pp_ffi::{
-    rosu_pp_FfiResult, rosu_pp_GameMode, rosu_pp_PerformanceAttributes, rosu_pp_ScoreState,
-    rosu_pp_beatmap_free, rosu_pp_beatmap_from_path, rosu_pp_mods_free, rosu_pp_mods_from_bits,
+    rosu_pp_DifficultyAttributes, rosu_pp_FfiResult, rosu_pp_GameMode,
+    rosu_pp_PerformanceAttributes, rosu_pp_ScoreState, rosu_pp_beatmap_free,
+    rosu_pp_beatmap_from_path, rosu_pp_mods_free, rosu_pp_mods_from_bits,
     rosu_pp_performance_accuracy, rosu_pp_performance_ar, rosu_pp_performance_calculate,
     rosu_pp_performance_checked_calculate, rosu_pp_performance_clock_rate,
     rosu_pp_performance_combo, rosu_pp_performance_cs, rosu_pp_performance_free,
@@ -15,6 +16,7 @@ use rosu_pp_ffi::{
     rosu_pp_performance_legacy_total_score, rosu_pp_performance_misses, rosu_pp_performance_mods,
     rosu_pp_performance_n_geki, rosu_pp_performance_n_katu, rosu_pp_performance_n50,
     rosu_pp_performance_n100, rosu_pp_performance_n300, rosu_pp_performance_new,
+    rosu_pp_performance_new_from_attrs, rosu_pp_performance_new_from_diff_attrs,
     rosu_pp_performance_od, rosu_pp_performance_passed_objects,
     rosu_pp_performance_slider_end_hits, rosu_pp_performance_small_tick_hits,
     rosu_pp_performance_state, rosu_pp_score_state_new, rosu_pp_score_state_total_hits,
@@ -563,5 +565,63 @@ fn checked_calculate() {
         assert_eq!(result, rosu_pp_FfiResult::Ok);
 
         rosu_pp_beatmap_free(map_handle);
+    }
+}
+
+#[test]
+fn new_from_attrs_null() {
+    unsafe {
+        let null_attrs: *const rosu_pp_PerformanceAttributes = std::ptr::null();
+        let perf = rosu_pp_performance_new_from_attrs(null_attrs);
+        assert!(perf.is_null());
+    }
+}
+
+#[test]
+fn new_from_diff_attrs_null() {
+    unsafe {
+        let null_attrs: *const rosu_pp_DifficultyAttributes = std::ptr::null();
+        let perf = rosu_pp_performance_new_from_diff_attrs(null_attrs);
+        assert!(perf.is_null());
+    }
+}
+
+#[test]
+fn new_from_diff_attrs_osu() {
+    unsafe {
+        // Create a minimal DifficultyAttributes struct manually
+        let mut diff_attrs = std::mem::zeroed::<rosu_pp_DifficultyAttributes>();
+        diff_attrs.mode = 0; // osu!
+        diff_attrs.stars = 5.0;
+        diff_attrs.max_combo = 400;
+        diff_attrs.aim = 1.0;
+        diff_attrs.speed = 1.0;
+        diff_attrs.flashlight = 0.5;
+        diff_attrs.ar = 9.0;
+
+        diff_attrs.hp = 7.0;
+        diff_attrs.great_hit_window = 80.0;
+        diff_attrs.ok_hit_window = 140.0;
+        diff_attrs.meh_hit_window = 200.0;
+        diff_attrs.n_circles = 300;
+        diff_attrs.n_sliders = 50;
+        diff_attrs.n_large_ticks = 100;
+        diff_attrs.n_spinners = 5;
+        diff_attrs.aim_difficult_slider_count = 10.0;
+        diff_attrs.slider_factor = 0.5;
+        diff_attrs.aim_top_weighted_slider_factor = 0.6;
+        diff_attrs.speed_top_weighted_slider_factor = 0.4;
+        diff_attrs.speed_note_count = 200.0;
+        diff_attrs.aim_difficult_strain_count = 50.0;
+        diff_attrs.speed_difficult_strain_count = 30.0;
+        diff_attrs.nested_score_per_object = 1.5;
+        diff_attrs.legacy_score_base_multiplier = 1.0;
+        diff_attrs.maximum_legacy_combo_score = 1000000.0;
+        diff_attrs.is_convert = false;
+
+        let perf = rosu_pp_performance_new_from_diff_attrs(&diff_attrs);
+        assert!(!perf.is_null());
+
+        rosu_pp_performance_free(perf);
     }
 }
