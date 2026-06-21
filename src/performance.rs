@@ -26,6 +26,12 @@ handle! {
     /// returns `FfiResult::Ok`. The handle pointer remains valid and can be
     /// used for subsequent setter calls.
     ///
+    /// **Lifetime requirement:** The `BeatmapHandle` passed to
+    /// `rosu_pp_performance_new` **must remain valid for the entire lifetime**
+    /// of this `PerformanceHandle`. Do NOT free the beatmap handle until after
+    /// you have called `rosu_pp_performance_free`. Using this handle after the
+    /// beatmap has been freed results in undefined behavior.
+    ///
     /// **Must be freed** with `rosu_pp_performance_free` when done.
     #[cheadergen::config(rename = "rosu_pp_PerformanceHandle")]
     PerformanceHandle -> Performance<'static>
@@ -38,9 +44,13 @@ handle! {
 ///
 /// **Returns:** A non-null handle on success, or `NULL` if `map` is null.
 ///
+/// **Lifetime requirement:** The `map` handle **must remain valid** for the
+/// entire lifetime of the returned `PerformanceHandle`. Do NOT call
+/// `rosu_pp_beatmap_free` on the map handle until after you have called
+/// `rosu_pp_performance_free`.
+///
 /// **Memory:** The caller owns the returned handle and must free it with
-/// `rosu_pp_performance_free`. The `map` handle **must** remain valid for the
-/// lifetime of this `PerformanceHandle`.
+/// `rosu_pp_performance_free`.
 ///
 /// # Safety
 ///

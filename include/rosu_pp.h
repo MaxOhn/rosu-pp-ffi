@@ -118,6 +118,12 @@ typedef struct rosu_pp_ModsHandle rosu_pp_ModsHandle;
  * returns `FfiResult::Ok`. The handle pointer remains valid and can be
  * used for subsequent setter calls.
  *
+ * **Lifetime requirement:** The `BeatmapHandle` passed to
+ * `rosu_pp_performance_new` **must remain valid for the entire lifetime**
+ * of this `PerformanceHandle`. Do NOT free the beatmap handle until after
+ * you have called `rosu_pp_performance_free`. Using this handle after the
+ * beatmap has been freed results in undefined behavior.
+ *
  * **Must be freed** with `rosu_pp_performance_free` when done.
  */
 typedef struct rosu_pp_PerformanceHandle rosu_pp_PerformanceHandle;
@@ -703,24 +709,6 @@ enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_apply_clock_rate(const struct rosu_
 struct rosu_pp_DifficultyHandle *rosu_pp_difficulty_new(void);
 
 /**
- * Create a new performance calculator for the given beatmap.
- *
- * **Parameters:**
- * - `map`: A valid `BeatmapHandle` pointer (may be null).
- *
- * **Returns:** A non-null handle on success, or `NULL` if `map` is null.
- *
- * **Memory:** The caller owns the returned handle and must free it with
- * `rosu_pp_performance_free`. The `map` handle **must** remain valid for the
- * lifetime of this `PerformanceHandle`.
- *
- * # Safety
- *
- * `map` must be a valid pointer to a `BeatmapHandle`, or null.
- */
-struct rosu_pp_PerformanceHandle *rosu_pp_performance_new(const struct rosu_pp_BeatmapHandle *map);
-
-/**
  * Create a new gradual difficulty calculator.
  *
  * **Parameters:**
@@ -781,6 +769,28 @@ struct rosu_pp_GradualPerformanceHandle *rosu_pp_gradual_performance_new(struct 
  * `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
  */
 float rosu_pp_beatmap_attrs_od(const struct rosu_pp_BeatmapAttributesHandle *handle);
+
+/**
+ * Create a new performance calculator for the given beatmap.
+ *
+ * **Parameters:**
+ * - `map`: A valid `BeatmapHandle` pointer (may be null).
+ *
+ * **Returns:** A non-null handle on success, or `NULL` if `map` is null.
+ *
+ * **Lifetime requirement:** The `map` handle **must remain valid** for the
+ * entire lifetime of the returned `PerformanceHandle`. Do NOT call
+ * `rosu_pp_beatmap_free` on the map handle until after you have called
+ * `rosu_pp_performance_free`.
+ *
+ * **Memory:** The caller owns the returned handle and must free it with
+ * `rosu_pp_performance_free`.
+ *
+ * # Safety
+ *
+ * `map` must be a valid pointer to a `BeatmapHandle`, or null.
+ */
+struct rosu_pp_PerformanceHandle *rosu_pp_performance_new(const struct rosu_pp_BeatmapHandle *map);
 
 /**
  * Populate the builder from a beatmap's attributes (AR, OD, CS, HP, mode,
@@ -883,25 +893,6 @@ struct rosu_pp_DifficultyHandle *rosu_pp_difficulty_clone(const struct rosu_pp_D
 float rosu_pp_beatmap_attrs_cs(const struct rosu_pp_BeatmapAttributesHandle *handle);
 
 /**
- * Set the game mods for the performance calculation.
- *
- * **Parameters:**
- * - `handle`: A valid `PerformanceHandle` pointer (may be null).
- * - `mods`: A `ModsHandle` pointer containing the mods to apply (may be null
- *   to clear mods).
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
- * `handle` is null.
- *
- * **Handle reuse:** The `handle` remains valid after this call.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
- */
-enum rosu_pp_FfiResult rosu_pp_performance_mods(struct rosu_pp_PerformanceHandle *handle, const struct rosu_pp_ModsHandle *mods);
-
-/**
  * Convert a game mode to its string representation.
  *
  * **Parameters:**
@@ -947,6 +938,25 @@ const char *rosu_pp_mode_to_str(enum rosu_pp_GameMode mode);
  * `out` must point to a valid `DifficultyAttributes` struct, or be null.
  */
 enum rosu_pp_FfiResult rosu_pp_gradual_difficulty_next(struct rosu_pp_GradualDifficultyHandle *handle, struct rosu_pp_DifficultyAttributes *out);
+
+/**
+ * Set the game mods for the performance calculation.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `PerformanceHandle` pointer (may be null).
+ * - `mods`: A `ModsHandle` pointer containing the mods to apply (may be null
+ *   to clear mods).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_mods(struct rosu_pp_PerformanceHandle *handle, const struct rosu_pp_ModsHandle *mods);
 
 /**
  * Process the next hit object and return incremental performance attributes.
@@ -1190,6 +1200,42 @@ void rosu_pp_gradual_performance_free(struct rosu_pp_GradualPerformanceHandle *h
 enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_od(struct rosu_pp_BeatmapAttributesBuilderHandle *handle, float od, bool fixed);
 
 /**
+ * Calculate the total number of hits from a score state for a given game mode.
+ *
+ * Adds up n300, n100, n50 (if not taiko), n_katu (if not osu/taiko),
+ * and n_geki (if not osu/taiko/catch) to get the total hit count.
+ *
+ * **Parameters:**
+ * - `state`: A valid `ScoreState` pointer (may be null).
+ * - `mode`: The game mode (0=osu!, 1=taiko, 2=catch, 3=mania).
+ *
+ * **Returns:** The total number of hits, or 0 if `state` is null.
+ *
+ * # Safety
+ *
+ * `state` must be a valid pointer to a `ScoreState`, or null.
+ */
+uint32_t rosu_pp_score_state_total_hits(const struct rosu_pp_ScoreState *state, enum rosu_pp_GameMode mode);
+
+/**
+ * Calculate the AR and OD hit windows for the beatmap attributes.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesHandle` pointer (may be null).
+ * - `out`: Pointer to a `HitWindows` struct where results will be written
+ *   (may be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` or `out` is null.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
+ * `out` must point to a valid `HitWindows` struct, or be null.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_hit_windows(const struct rosu_pp_BeatmapAttributesHandle *handle, struct rosu_pp_HitWindows *out);
+
+/**
  *  Amount of passed objects for partial plays, e.g. a fail.
  *
  *  **Parameters:**
@@ -1227,66 +1273,6 @@ enum rosu_pp_FfiResult rosu_pp_performance_passed_objects(struct rosu_pp_Perform
  * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
  */
 enum rosu_pp_FfiResult rosu_pp_performance_clock_rate(struct rosu_pp_PerformanceHandle *handle, double clock_rate);
-
-/**
- * Calculate the total number of hits from a score state for a given game mode.
- *
- * Adds up n300, n100, n50 (if not taiko), n_katu (if not osu/taiko),
- * and n_geki (if not osu/taiko/catch) to get the total hit count.
- *
- * **Parameters:**
- * - `state`: A valid `ScoreState` pointer (may be null).
- * - `mode`: The game mode (0=osu!, 1=taiko, 2=catch, 3=mania).
- *
- * **Returns:** The total number of hits, or 0 if `state` is null.
- *
- * # Safety
- *
- * `state` must be a valid pointer to a `ScoreState`, or null.
- */
-uint32_t rosu_pp_score_state_total_hits(const struct rosu_pp_ScoreState *state, enum rosu_pp_GameMode mode);
-
-/**
- * Calculate the AR and OD hit windows for the beatmap attributes.
- *
- * **Parameters:**
- * - `handle`: A valid `BeatmapAttributesHandle` pointer (may be null).
- * - `out`: Pointer to a `HitWindows` struct where results will be written
- *   (may be null).
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
- * `handle` or `out` is null.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `BeatmapAttributesHandle`, or null.
- * `out` must point to a valid `HitWindows` struct, or be null.
- */
-enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_hit_windows(const struct rosu_pp_BeatmapAttributesHandle *handle, struct rosu_pp_HitWindows *out);
-
-/**
- *  Override the approach rate (AR).
- *
- *  Sets a fixed AR value, bypassing the normal AR calculation from the
- *  beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
- *  `false`, the value may be adjusted by mods and clock rate.
- *
- *  **Parameters:**
- *    - `ar`: The approach rate value.
- *    - `fixed`: If `true`, the value is used as-is. If `false`, it may be
- *      adjusted by mods and clock rate.
- *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
- * if `handle` is null.
- *
- * **Handle reuse:** The `handle` remains valid after this call.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
- */
-enum rosu_pp_FfiResult rosu_pp_performance_ar(struct rosu_pp_PerformanceHandle *handle, float ar, bool fixed);
 
 /**
  * Free a strains handle and release its memory.
@@ -1341,6 +1327,30 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_passed_objects(struct rosu_pp_Difficul
 enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_cs(struct rosu_pp_BeatmapAttributesBuilderHandle *handle, float cs, bool fixed);
 
 /**
+ *  Override the approach rate (AR).
+ *
+ *  Sets a fixed AR value, bypassing the normal AR calculation from the
+ *  beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+ *  `false`, the value may be adjusted by mods and clock rate.
+ *
+ *  **Parameters:**
+ *    - `ar`: The approach rate value.
+ *    - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+ *      adjusted by mods and clock rate.
+ *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+ * if `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_ar(struct rosu_pp_PerformanceHandle *handle, float ar, bool fixed);
+
+/**
  *  Adjust the clock rate used in the calculation.
  *
  *  If none is specified, it will take the clock rate based on the mods
@@ -1378,30 +1388,6 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_clock_rate(struct rosu_pp_DifficultyHa
  * `out` must point to a valid `$ty`, or be null.
  */
 enum rosu_pp_FfiResult rosu_pp_inspect_difficulty_passed_objects(const struct rosu_pp_InspectDifficultyHandle *handle, uint32_t *out);
-
-/**
- *  Override the circle size (CS).
- *
- *  Sets a fixed CS value, bypassing the normal CS calculation from the
- *  beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
- *  `false`, the value may be adjusted by mods.
- *
- *  **Parameters:**
- *    - `cs`: The circle size value.
- *    - `fixed`: If `true`, the value is used as-is. If `false`, it may be
- *      adjusted by mods.
- *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
- * if `handle` is null.
- *
- * **Handle reuse:** The `handle` remains valid after this call.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
- */
-enum rosu_pp_FfiResult rosu_pp_performance_cs(struct rosu_pp_PerformanceHandle *handle, float cs, bool fixed);
 
 /**
  * Returns the value of the `$field` field from the beatmap.
@@ -1750,6 +1736,30 @@ float rosu_pp_beatmap_stack_leniency(const struct rosu_pp_BeatmapHandle *handle)
 bool rosu_pp_beatmap_is_convert(const struct rosu_pp_BeatmapHandle *handle);
 
 /**
+ *  Override the circle size (CS).
+ *
+ *  Sets a fixed CS value, bypassing the normal CS calculation from the
+ *  beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+ *  `false`, the value may be adjusted by mods.
+ *
+ *  **Parameters:**
+ *    - `cs`: The circle size value.
+ *    - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+ *      adjusted by mods.
+ *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+ * if `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_cs(struct rosu_pp_PerformanceHandle *handle, float cs, bool fixed);
+
+/**
  * Returns a computed value derived from the beatmap.
  *
  * **Parameters:**
@@ -1804,30 +1814,6 @@ double rosu_pp_beatmap_bpm(const struct rosu_pp_BeatmapHandle *handle);
  * `handle` must be a valid pointer to a `BeatmapHandle`, or null.
  */
 uintptr_t rosu_pp_beatmap_timing_point_count(const struct rosu_pp_BeatmapHandle *handle);
-
-/**
- *  Override the HP drain rate.
- *
- *  Sets a fixed HP value, bypassing the normal HP calculation from the
- *  beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
- *  `false`, the value may be adjusted by mods.
- *
- *  **Parameters:**
- *    - `hp`: The HP drain rate value.
- *    - `fixed`: If `true`, the value is used as-is. If `false`, it may be
- *      adjusted by mods.
- *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
- * if `handle` is null.
- *
- * **Handle reuse:** The `handle` remains valid after this call.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
- */
-enum rosu_pp_FfiResult rosu_pp_performance_hp(struct rosu_pp_PerformanceHandle *handle, float hp, bool fixed);
 
 /**
  * Returns a computed value derived from the beatmap.
@@ -1924,6 +1910,30 @@ void rosu_pp_inspect_difficulty_free(struct rosu_pp_InspectDifficultyHandle *han
 enum rosu_pp_FfiResult rosu_pp_difficulty_cs(struct rosu_pp_DifficultyHandle *handle, float cs, bool fixed);
 
 /**
+ *  Override the HP drain rate.
+ *
+ *  Sets a fixed HP value, bypassing the normal HP calculation from the
+ *  beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+ *  `false`, the value may be adjusted by mods.
+ *
+ *  **Parameters:**
+ *    - `hp`: The HP drain rate value.
+ *    - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+ *      adjusted by mods.
+ *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+ * if `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_hp(struct rosu_pp_PerformanceHandle *handle, float hp, bool fixed);
+
+/**
  * Override the HP drain rate.
  *
  * **Parameters:**
@@ -1942,30 +1952,6 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_cs(struct rosu_pp_DifficultyHandle *ha
  * `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
  */
 enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_hp(struct rosu_pp_BeatmapAttributesBuilderHandle *handle, float hp, bool fixed);
-
-/**
- *  Override the overall difficulty (OD).
- *
- *  Sets a fixed OD value, bypassing the normal OD calculation from the
- *  beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
- *  `false`, the value may be adjusted by mods and clock rate.
- *
- *  **Parameters:**
- *    - `od`: The overall difficulty value.
- *    - `fixed`: If `true`, the value is used as-is. If `false`, it may be
- *      adjusted by mods and clock rate.
- *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
- * if `handle` is null.
- *
- * **Handle reuse:** The `handle` remains valid after this call.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
- */
-enum rosu_pp_FfiResult rosu_pp_performance_od(struct rosu_pp_PerformanceHandle *handle, float od, bool fixed);
 
 /**
  *  Override the HP drain rate.
@@ -2012,12 +1998,16 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_hp(struct rosu_pp_DifficultyHandle *ha
 enum rosu_pp_FfiResult rosu_pp_beatmap_check_suspicion(const struct rosu_pp_BeatmapHandle *handle);
 
 /**
- *  Adjust patterns as if the HR mod is enabled.
+ *  Override the overall difficulty (OD).
  *
- *  Only relevant for osu!catch.
+ *  Sets a fixed OD value, bypassing the normal OD calculation from the
+ *  beatmap. If `fixed` is `true`, the value is used as-is. If `fixed` is
+ *  `false`, the value may be adjusted by mods and clock rate.
  *
  *  **Parameters:**
- *    - `hardrock_offsets`: Whether to apply hardrock-specific offsets.
+ *    - `od`: The overall difficulty value.
+ *    - `fixed`: If `true`, the value is used as-is. If `false`, it may be
+ *      adjusted by mods and clock rate.
  *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
  *
  * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
@@ -2029,7 +2019,7 @@ enum rosu_pp_FfiResult rosu_pp_beatmap_check_suspicion(const struct rosu_pp_Beat
  *
  * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
  */
-enum rosu_pp_FfiResult rosu_pp_performance_hardrock_offsets(struct rosu_pp_PerformanceHandle *handle, bool hardrock_offsets);
+enum rosu_pp_FfiResult rosu_pp_performance_od(struct rosu_pp_PerformanceHandle *handle, float od, bool fixed);
 
 /**
  *  Override the overall difficulty (OD).
@@ -2056,11 +2046,12 @@ enum rosu_pp_FfiResult rosu_pp_performance_hardrock_offsets(struct rosu_pp_Perfo
 enum rosu_pp_FfiResult rosu_pp_difficulty_od(struct rosu_pp_DifficultyHandle *handle, float od, bool fixed);
 
 /**
- *  Whether the calculated attributes belong to an osu!lazer or osu!stable
- *  score.
+ *  Adjust patterns as if the HR mod is enabled.
+ *
+ *  Only relevant for osu!catch.
  *
  *  **Parameters:**
- *    - `lazer`: Whether to use lazer mode calculation.
+ *    - `hardrock_offsets`: Whether to apply hardrock-specific offsets.
  *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
  *
  * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
@@ -2072,7 +2063,7 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_od(struct rosu_pp_DifficultyHandle *ha
  *
  * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
  */
-enum rosu_pp_FfiResult rosu_pp_performance_lazer(struct rosu_pp_PerformanceHandle *handle, bool lazer);
+enum rosu_pp_FfiResult rosu_pp_performance_hardrock_offsets(struct rosu_pp_PerformanceHandle *handle, bool hardrock_offsets);
 
 /**
  * Create a mods handle from legacy bitflags.
@@ -2115,10 +2106,11 @@ struct rosu_pp_ModsHandle *rosu_pp_mods_from_bits(uint32_t bits);
 enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_mods(struct rosu_pp_BeatmapAttributesBuilderHandle *handle, const struct rosu_pp_ModsHandle *mods);
 
 /**
- *  Set the accuracy between `0.0` and `100.0`.
+ *  Whether the calculated attributes belong to an osu!lazer or osu!stable
+ *  score.
  *
  *  **Parameters:**
- *    - `accuracy`: The accuracy value (0.0–100.0).
+ *    - `lazer`: Whether to use lazer mode calculation.
  *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
  *
  * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
@@ -2130,7 +2122,7 @@ enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_mods(struct rosu_pp_Beatmap
  *
  * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
  */
-enum rosu_pp_FfiResult rosu_pp_performance_accuracy(struct rosu_pp_PerformanceHandle *handle, double accuracy);
+enum rosu_pp_FfiResult rosu_pp_performance_lazer(struct rosu_pp_PerformanceHandle *handle, bool lazer);
 
 /**
  * Free a beatmap handle and release its memory.
@@ -2169,24 +2161,6 @@ void rosu_pp_beatmap_free(struct rosu_pp_BeatmapHandle *handle);
 enum rosu_pp_FfiResult rosu_pp_difficulty_hardrock_offsets(struct rosu_pp_DifficultyHandle *handle, bool hardrock_offsets);
 
 /**
- *  Set the number of misses.
- *
- *  **Parameters:**
- *    - `misses`: The number of misses in the score.
- *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
- * if `handle` is null.
- *
- * **Handle reuse:** The `handle` remains valid after this call.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
- */
-enum rosu_pp_FfiResult rosu_pp_performance_misses(struct rosu_pp_PerformanceHandle *handle, uint32_t misses);
-
-/**
  * Convert a mods handle to legacy bitflags.
  *
  * **Parameters:**
@@ -2199,6 +2173,24 @@ enum rosu_pp_FfiResult rosu_pp_performance_misses(struct rosu_pp_PerformanceHand
  * `mods` must be a valid pointer to a `ModsHandle`, or null.
  */
 uint32_t rosu_pp_mods_to_bits(const struct rosu_pp_ModsHandle *mods);
+
+/**
+ *  Set the accuracy between `0.0` and `100.0`.
+ *
+ *  **Parameters:**
+ *    - `accuracy`: The accuracy value (0.0–100.0).
+ *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+ * if `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_accuracy(struct rosu_pp_PerformanceHandle *handle, double accuracy);
 
 /**
  *  Whether the calculated attributes belong to an osu!lazer or osu!stable
@@ -2220,6 +2212,24 @@ uint32_t rosu_pp_mods_to_bits(const struct rosu_pp_ModsHandle *mods);
 enum rosu_pp_FfiResult rosu_pp_difficulty_lazer(struct rosu_pp_DifficultyHandle *handle, bool lazer);
 
 /**
+ *  Set the number of misses.
+ *
+ *  **Parameters:**
+ *    - `misses`: The number of misses in the score.
+ *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+ * if `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_misses(struct rosu_pp_PerformanceHandle *handle, uint32_t misses);
+
+/**
  *  Set the maximum combo achieved.
  *
  *  **Parameters:**
@@ -2236,6 +2246,24 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_lazer(struct rosu_pp_DifficultyHandle 
  * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
  */
 enum rosu_pp_FfiResult rosu_pp_performance_combo(struct rosu_pp_PerformanceHandle *handle, uint32_t combo);
+
+/**
+ * Set a custom clock rate.
+ *
+ * **Parameters:**
+ * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
+ * - `clock_rate`: The clock rate value.
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
+ * `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
+ */
+enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_clock_rate(struct rosu_pp_BeatmapAttributesBuilderHandle *handle, double clock_rate);
 
 /**
  *  Specify the amount of "large tick" hits.
@@ -2265,24 +2293,6 @@ enum rosu_pp_FfiResult rosu_pp_performance_combo(struct rosu_pp_PerformanceHandl
 enum rosu_pp_FfiResult rosu_pp_performance_large_tick_hits(struct rosu_pp_PerformanceHandle *handle, uint32_t large_tick_hits);
 
 /**
- * Set a custom clock rate.
- *
- * **Parameters:**
- * - `handle`: A valid `BeatmapAttributesBuilderHandle` pointer (may be null).
- * - `clock_rate`: The clock rate value.
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer` if
- * `handle` is null.
- *
- * **Handle reuse:** The `handle` remains valid after this call.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `BeatmapAttributesBuilderHandle`, or null.
- */
-enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_clock_rate(struct rosu_pp_BeatmapAttributesBuilderHandle *handle, double clock_rate);
-
-/**
  * Convert a mods handle to a string representation.
  *
  * Returns the mod acronyms as a string (e.g., `"HDHRDT"`).
@@ -2300,27 +2310,6 @@ enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_clock_rate(struct rosu_pp_B
  * `mods` must be a valid pointer to a `ModsHandle`, or null.
  */
 char *rosu_pp_mods_to_string(const struct rosu_pp_ModsHandle *mods);
-
-/**
- *  Specify the amount of "small tick" hits.
- *
- *  Only relevant for osu!standard lazer scores without slider accuracy. In
- *  that case, this value is the amount of slider tail hits.
- *
- *  **Parameters:**
- *    - `small_tick_hits`: The number of small tick hits.
- *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
- * if `handle` is null.
- *
- * **Handle reuse:** The `handle` remains valid after this call.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
- */
-enum rosu_pp_FfiResult rosu_pp_performance_small_tick_hits(struct rosu_pp_PerformanceHandle *handle, uint32_t small_tick_hits);
 
 /**
  * Calculate difficulty attributes for the configured settings.
@@ -2346,12 +2335,13 @@ enum rosu_pp_FfiResult rosu_pp_performance_small_tick_hits(struct rosu_pp_Perfor
 enum rosu_pp_FfiResult rosu_pp_difficulty_calculate(struct rosu_pp_DifficultyHandle *handle, const struct rosu_pp_BeatmapHandle *map, struct rosu_pp_DifficultyAttributes *out);
 
 /**
- *  Specify the amount of hit slider ends.
+ *  Specify the amount of "small tick" hits.
  *
- *  Only relevant for osu!standard lazer scores with slider accuracy.
+ *  Only relevant for osu!standard lazer scores without slider accuracy. In
+ *  that case, this value is the amount of slider tail hits.
  *
  *  **Parameters:**
- *    - `slider_end_hits`: The number of slider end hits.
+ *    - `small_tick_hits`: The number of small tick hits.
  *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
  *
  * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
@@ -2363,7 +2353,7 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_calculate(struct rosu_pp_DifficultyHan
  *
  * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
  */
-enum rosu_pp_FfiResult rosu_pp_performance_slider_end_hits(struct rosu_pp_PerformanceHandle *handle, uint32_t slider_end_hits);
+enum rosu_pp_FfiResult rosu_pp_performance_small_tick_hits(struct rosu_pp_PerformanceHandle *handle, uint32_t small_tick_hits);
 
 /**
  * Set the game mode and convert status.
@@ -2385,10 +2375,12 @@ enum rosu_pp_FfiResult rosu_pp_performance_slider_end_hits(struct rosu_pp_Perfor
 enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_mode(struct rosu_pp_BeatmapAttributesBuilderHandle *handle, enum rosu_pp_GameMode mode, bool is_convert);
 
 /**
- *  Specify the amount of 300s of a play.
+ *  Specify the amount of hit slider ends.
+ *
+ *  Only relevant for osu!standard lazer scores with slider accuracy.
  *
  *  **Parameters:**
- *    - `n300`: The number of 300-score hit results.
+ *    - `slider_end_hits`: The number of slider end hits.
  *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
  *
  * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
@@ -2400,7 +2392,7 @@ enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_mode(struct rosu_pp_Beatmap
  *
  * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
  */
-enum rosu_pp_FfiResult rosu_pp_performance_n300(struct rosu_pp_PerformanceHandle *handle, uint32_t n300);
+enum rosu_pp_FfiResult rosu_pp_performance_slider_end_hits(struct rosu_pp_PerformanceHandle *handle, uint32_t slider_end_hits);
 
 /**
  * Free a string returned by `rosu_pp_mods_to_string`.
@@ -2420,6 +2412,24 @@ enum rosu_pp_FfiResult rosu_pp_performance_n300(struct rosu_pp_PerformanceHandle
 void rosu_pp_mods_free_string(char *s);
 
 /**
+ *  Specify the amount of 300s of a play.
+ *
+ *  **Parameters:**
+ *    - `n300`: The number of 300-score hit results.
+ *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+ * if `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_n300(struct rosu_pp_PerformanceHandle *handle, uint32_t n300);
+
+/**
  *  Specify the amount of 100s of a play.
  *
  *  **Parameters:**
@@ -2436,24 +2446,6 @@ void rosu_pp_mods_free_string(char *s);
  * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
  */
 enum rosu_pp_FfiResult rosu_pp_performance_n100(struct rosu_pp_PerformanceHandle *handle, uint32_t n100);
-
-/**
- *  Specify the amount of 50s of a play.
- *
- *  **Parameters:**
- *    - `n50`: The number of 50-score hit results.
- *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
- *
- * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
- * if `handle` is null.
- *
- * **Handle reuse:** The `handle` remains valid after this call.
- *
- * # Safety
- *
- * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
- */
-enum rosu_pp_FfiResult rosu_pp_performance_n50(struct rosu_pp_PerformanceHandle *handle, uint32_t n50);
 
 /**
  * Free a mods handle and release its memory.
@@ -2500,13 +2492,10 @@ void rosu_pp_mods_free(struct rosu_pp_ModsHandle *handle);
 enum rosu_pp_FfiResult rosu_pp_difficulty_checked_calculate(struct rosu_pp_DifficultyHandle *handle, const struct rosu_pp_BeatmapHandle *map, struct rosu_pp_DifficultyAttributes *out);
 
 /**
- *  Specify the amount of gekis of a play.
- *
- *  Only relevant for osu!mania for which it repesents the
- *  amount of n320.
+ *  Specify the amount of 50s of a play.
  *
  *  **Parameters:**
- *    - `n_geki`: The number of geki hits.
+ *    - `n50`: The number of 50-score hit results.
  *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
  *
  * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
@@ -2518,7 +2507,7 @@ enum rosu_pp_FfiResult rosu_pp_difficulty_checked_calculate(struct rosu_pp_Diffi
  *
  * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
  */
-enum rosu_pp_FfiResult rosu_pp_performance_n_geki(struct rosu_pp_PerformanceHandle *handle, uint32_t n_geki);
+enum rosu_pp_FfiResult rosu_pp_performance_n50(struct rosu_pp_PerformanceHandle *handle, uint32_t n50);
 
 /**
  * Populate the builder from a difficulty calculator's settings.
@@ -2541,6 +2530,27 @@ enum rosu_pp_FfiResult rosu_pp_performance_n_geki(struct rosu_pp_PerformanceHand
  * `difficulty` must be a valid pointer to a `DifficultyHandle`, or null.
  */
 enum rosu_pp_FfiResult rosu_pp_beatmap_attrs_builder_difficulty(struct rosu_pp_BeatmapAttributesBuilderHandle *handle, const struct rosu_pp_DifficultyHandle *difficulty);
+
+/**
+ *  Specify the amount of gekis of a play.
+ *
+ *  Only relevant for osu!mania for which it repesents the
+ *  amount of n320.
+ *
+ *  **Parameters:**
+ *    - `n_geki`: The number of geki hits.
+ *   - `handle`: A valid `PerformanceHandle` pointer (may be null).
+ *
+ * **Returns:** `FfiResult::Ok` on success, or `FfiResult::NullPointer`
+ * if `handle` is null.
+ *
+ * **Handle reuse:** The `handle` remains valid after this call.
+ *
+ * # Safety
+ *
+ * `handle` must be a valid pointer to a `PerformanceHandle`, or null.
+ */
+enum rosu_pp_FfiResult rosu_pp_performance_n_geki(struct rosu_pp_PerformanceHandle *handle, uint32_t n_geki);
 
 /**
  *  Specify the amount of katus of a play.
