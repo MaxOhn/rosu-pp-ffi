@@ -51,6 +51,32 @@ rosu_pp_difficulty_free(diff);
 rosu_pp_beatmap_free(map);
 ```
 
+### Performance from pre-calculated attributes
+
+When you already have `DifficultyAttributes` or `PerformanceAttributes` (e.g., cached on a server),
+you can skip beatmap loading and create a performance calculator directly:
+
+```c
+// From DifficultyAttributes (pp will be calculated from score params)
+rosu_pp_DifficultyAttributes diff_attrs;
+// ... populate from cached data ...
+
+rosu_pp_PerformanceHandle* perf = rosu_pp_performance_new_from_diff_attrs(&diff_attrs);
+rosu_pp_performance_mods(perf, mods);
+rosu_pp_performance_accuracy(perf, 99.5);
+rosu_pp_performance_combo(perf, diff_attrs.max_combo);
+
+rosu_pp_PerformanceAttributes result;
+rosu_pp_performance_calculate(perf, &result);
+rosu_pp_performance_free(perf);
+
+// From PerformanceAttributes (no pp recalculation needed)
+rosu_pp_PerformanceHandle* perf2 = rosu_pp_performance_new_from_attrs(&perf_attrs);
+// Configure mods, score state, etc.
+rosu_pp_performance_calculate(perf2, &result);
+rosu_pp_performance_free(perf2);
+```
+
 ### Strings
 
 Strings returned by `*_to_string` are owned by the caller. Free them with the matching `*_free_string` (NOT `free()`):

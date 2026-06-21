@@ -150,6 +150,7 @@ pub use performance::{
     rosu_pp_performance_legacy_total_score, rosu_pp_performance_misses, rosu_pp_performance_mods,
     rosu_pp_performance_n_geki, rosu_pp_performance_n_katu, rosu_pp_performance_n50,
     rosu_pp_performance_n100, rosu_pp_performance_n300, rosu_pp_performance_new,
+    rosu_pp_performance_new_from_attrs, rosu_pp_performance_new_from_diff_attrs,
     rosu_pp_performance_od, rosu_pp_performance_passed_objects,
     rosu_pp_performance_slider_end_hits, rosu_pp_performance_small_tick_hits,
     rosu_pp_performance_state,

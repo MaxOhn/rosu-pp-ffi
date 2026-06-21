@@ -132,7 +132,6 @@ static void check_concrete_structs(void) {
         da.color                       = 0.0;
         da.reading                     = 0.0;
         da.ar                          = 0.0;
-        da.od                          = 0.0;
         da.hp                          = 0.0;
         da.great_hit_window            = 0.0;
         da.ok_hit_window               = 0.0;
@@ -173,7 +172,6 @@ static void check_concrete_structs(void) {
         pa.pp_speed                    = 0.0;
         pa.pp_flashlight               = 0.0;
         pa.pp_difficulty               = 0.0;
-        pa.max_combo                   = 0;
         pa.effective_miss_count        = 0.0;
         pa.speed_deviation             = 0.0;
         pa.combo_based_estimated_miss_count = 0.0;
@@ -284,6 +282,10 @@ static void check_function_signatures(void) {
     /* Performance */
     rosu_pp_PerformanceHandle *(*p_perf_new)(const rosu_pp_BeatmapHandle *)
         = rosu_pp_performance_new;
+    rosu_pp_PerformanceHandle *(*p_perf_new_attrs)(const rosu_pp_PerformanceAttributes *)
+        = rosu_pp_performance_new_from_attrs;
+    rosu_pp_PerformanceHandle *(*p_perf_new_diff_attrs)(const rosu_pp_DifficultyAttributes *)
+        = rosu_pp_performance_new_from_diff_attrs;
     rosu_pp_FfiResult (*p_perf_mods)(rosu_pp_PerformanceHandle *, const rosu_pp_ModsHandle *)
         = rosu_pp_performance_mods;
     rosu_pp_FfiResult (*p_perf_calc)(rosu_pp_PerformanceHandle *,
@@ -358,7 +360,8 @@ static void check_function_signatures(void) {
     (void)p_diff_lazer; (void)p_diff_calc; (void)p_diff_checked;
     (void)p_diff_strains; (void)p_diff_free;
     (void)p_inspect; (void)p_inspect_free;
-    (void)p_perf_new; (void)p_perf_mods; (void)p_perf_calc; (void)p_perf_free;
+    (void)p_perf_new; (void)p_perf_new_attrs; (void)p_perf_new_diff_attrs;
+    (void)p_perf_mods; (void)p_perf_calc; (void)p_perf_free;
     (void)p_ss_new; (void)p_ss_hits;
     (void)p_gdiff_new; (void)p_gdiff_next; (void)p_gdiff_free;
     (void)p_gperf_new; (void)p_gperf_next; (void)p_gperf_free;

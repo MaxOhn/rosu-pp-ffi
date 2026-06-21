@@ -5,9 +5,16 @@
 
 use std::ptr;
 
-use rosu_pp::{Performance, any::HitResultPriority};
+use rosu_pp::{
+    Performance,
+    any::{
+        DifficultyAttributes as RosuDifficultyAttributes, HitResultPriority,
+        PerformanceAttributes as RosuPerformanceAttributes,
+    },
+};
 
 use crate::{
+    attributes::difficulty::DifficultyAttributes,
     attributes::performance::PerformanceAttributes,
     beatmap::BeatmapHandle,
     error::FfiResult,
@@ -39,6 +46,12 @@ handle! {
 
 /// Create a new performance calculator for the given beatmap.
 ///
+/// Difficulty attributes will be calculated internally from the beatmap,
+/// which is a costly operation. For better performance when calculating
+/// performance for the same map multiple times, consider using
+/// `rosu_pp_performance_new_from_diff_attrs` or
+/// `rosu_pp_performance_new_from_attrs` with pre-calculated attributes.
+///
 /// **Parameters:**
 /// - `map`: A valid `BeatmapHandle` pointer (may be null).
 ///
@@ -64,6 +77,69 @@ pub unsafe extern "C" fn rosu_pp_performance_new(
     };
 
     Box::into_raw(Box::new(PerformanceHandle::from(Performance::new(map))))
+}
+
+/// Create a new performance calculator from pre-calculated performance attributes.
+///
+/// Use this when you already have `PerformanceAttributes` from a previous
+/// calculation. The attributes are copied so the returned handle has **no
+/// lifetime requirement** on any external resource.
+///
+/// **Parameters:**
+/// - `attrs`: A valid `PerformanceAttributes` struct (may be null).
+///
+/// **Returns:** A non-null handle on success, or `NULL` if `attrs` is null.
+///
+/// **Memory:** The caller owns the returned handle and must free it with
+/// `rosu_pp_performance_free`.
+///
+/// # Safety
+///
+/// `attrs` must be a valid pointer to a `PerformanceAttributes` struct, or null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rosu_pp_performance_new_from_attrs(
+    attrs: *const PerformanceAttributes,
+) -> *mut PerformanceHandle {
+    if attrs.is_null() {
+        return ptr::null_mut();
+    }
+
+    let attrs = RosuPerformanceAttributes::from(unsafe { attrs.as_ref_unchecked() });
+
+    Box::into_raw(Box::new(PerformanceHandle::from(Performance::new(attrs))))
+}
+
+/// Create a new performance calculator from pre-calculated difficulty attributes.
+///
+/// Use this when you already have `DifficultyAttributes` from a previous
+/// calculation. Performance points will be computed from the score parameters
+/// set via setters.
+///
+/// The attributes are copied so the returned handle has **no lifetime requirement**
+/// on any external resource.
+///
+/// **Parameters:**
+/// - `attrs`: A valid `DifficultyAttributes` struct (may be null).
+///
+/// **Returns:** A non-null handle on success, or `NULL` if `attrs` is null.
+///
+/// **Memory:** The caller owns the returned handle and must free it with
+/// `rosu_pp_performance_free`.
+///
+/// # Safety
+///
+/// `attrs` must be a valid pointer to a `DifficultyAttributes` struct, or null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rosu_pp_performance_new_from_diff_attrs(
+    attrs: *const DifficultyAttributes,
+) -> *mut PerformanceHandle {
+    if attrs.is_null() {
+        return ptr::null_mut();
+    }
+
+    let attrs = RosuDifficultyAttributes::from(unsafe { attrs.as_ref_unchecked() });
+
+    Box::into_raw(Box::new(PerformanceHandle::from(Performance::new(attrs))))
 }
 
 /// Set the game mods for the performance calculation.

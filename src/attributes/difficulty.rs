@@ -49,8 +49,6 @@ pub struct DifficultyAttributes {
     pub reading: f64,
     /// Approach Rate (osu! only)
     pub ar: f64,
-    /// Overall Difficulty (osu! only)
-    pub od: f64,
     /// HP Drain rate (osu! only)
     pub hp: f64,
     /// Great hit window in milliseconds (osu! / taiko)
@@ -111,8 +109,6 @@ pub struct DifficultyAttributes {
 
 impl From<&OsuDifficultyAttributes> for DifficultyAttributes {
     fn from(attrs: &OsuDifficultyAttributes) -> Self {
-        let od = attrs.od();
-
         let OsuDifficultyAttributes {
             aim,
             aim_difficult_slider_count,
@@ -152,7 +148,6 @@ impl From<&OsuDifficultyAttributes> for DifficultyAttributes {
             color: 0.0,
             reading: 0.0,
             ar: *ar,
-            od,
             hp: *hp,
             great_hit_window: *great_hit_window,
             ok_hit_window: *ok_hit_window,
@@ -214,7 +209,6 @@ impl From<&TaikoDifficultyAttributes> for DifficultyAttributes {
             color: *color,
             reading: *reading,
             ar: 0.0,
-            od: 0.0,
             hp: 0.0,
             great_hit_window: *great_hit_window,
             ok_hit_window: *ok_hit_window,
@@ -272,7 +266,6 @@ impl From<&CatchDifficultyAttributes> for DifficultyAttributes {
             color: 0.0,
             reading: 0.0,
             ar: 0.0,
-            od: 0.0,
             hp: 0.0,
             great_hit_window: 0.0,
             ok_hit_window: 0.0,
@@ -327,7 +320,6 @@ impl From<&ManiaDifficultyAttributes> for DifficultyAttributes {
             color: 0.0,
             reading: 0.0,
             ar: 0.0,
-            od: 0.0,
             hp: 0.0,
             great_hit_window: 0.0,
             ok_hit_window: 0.0,
@@ -367,6 +359,111 @@ impl From<&RosuDifficultyAttributes> for DifficultyAttributes {
             RosuDifficultyAttributes::Taiko(attrs) => Self::from(attrs),
             RosuDifficultyAttributes::Catch(attrs) => Self::from(attrs),
             RosuDifficultyAttributes::Mania(attrs) => Self::from(attrs),
+        }
+    }
+}
+
+impl From<&DifficultyAttributes> for RosuDifficultyAttributes {
+    fn from(attrs: &DifficultyAttributes) -> Self {
+        let DifficultyAttributes {
+            mode,
+            stars,
+            max_combo,
+            aim,
+            speed,
+            flashlight,
+            stamina,
+            rhythm,
+            color,
+            reading,
+            ar,
+            hp,
+            great_hit_window,
+            ok_hit_window,
+            meh_hit_window,
+            n_circles,
+            n_sliders,
+            n_large_ticks,
+            n_spinners,
+            n_objects,
+            aim_difficult_slider_count,
+            slider_factor,
+            aim_top_weighted_slider_factor,
+            speed_top_weighted_slider_factor,
+            speed_note_count,
+            aim_difficult_strain_count,
+            speed_difficult_strain_count,
+            nested_score_per_object,
+            legacy_score_base_multiplier,
+            maximum_legacy_combo_score,
+            mono_stamina_factor,
+            mechanical_difficulty,
+            consistency_factor,
+            preempt,
+            n_fruits,
+            n_droplets,
+            n_tiny_droplets,
+            n_hold_notes,
+            is_convert,
+        } = attrs;
+
+        match mode {
+            0 => RosuDifficultyAttributes::Osu(OsuDifficultyAttributes {
+                stars: *stars,
+                max_combo: *max_combo,
+                aim: *aim,
+                speed: *speed,
+                flashlight: *flashlight,
+                ar: *ar,
+                hp: *hp,
+                great_hit_window: *great_hit_window,
+                ok_hit_window: *ok_hit_window,
+                meh_hit_window: *meh_hit_window,
+                n_circles: *n_circles,
+                n_sliders: *n_sliders,
+                n_large_ticks: *n_large_ticks,
+                n_spinners: *n_spinners,
+                aim_difficult_slider_count: *aim_difficult_slider_count,
+                slider_factor: *slider_factor,
+                aim_top_weighted_slider_factor: *aim_top_weighted_slider_factor,
+                speed_top_weighted_slider_factor: *speed_top_weighted_slider_factor,
+                speed_note_count: *speed_note_count,
+                aim_difficult_strain_count: *aim_difficult_strain_count,
+                speed_difficult_strain_count: *speed_difficult_strain_count,
+                nested_score_per_object: *nested_score_per_object,
+                legacy_score_base_multiplier: *legacy_score_base_multiplier,
+                maximum_legacy_combo_score: *maximum_legacy_combo_score,
+            }),
+            1 => RosuDifficultyAttributes::Taiko(TaikoDifficultyAttributes {
+                stars: *stars,
+                max_combo: *max_combo,
+                stamina: *stamina,
+                rhythm: *rhythm,
+                color: *color,
+                reading: *reading,
+                great_hit_window: *great_hit_window,
+                ok_hit_window: *ok_hit_window,
+                mono_stamina_factor: *mono_stamina_factor,
+                mechanical_difficulty: *mechanical_difficulty,
+                consistency_factor: *consistency_factor,
+                is_convert: *is_convert,
+            }),
+            2 => RosuDifficultyAttributes::Catch(CatchDifficultyAttributes {
+                stars: *stars,
+                preempt: *preempt,
+                n_fruits: *n_fruits,
+                n_droplets: *n_droplets,
+                n_tiny_droplets: *n_tiny_droplets,
+                is_convert: *is_convert,
+            }),
+            3 => RosuDifficultyAttributes::Mania(ManiaDifficultyAttributes {
+                stars: *stars,
+                n_objects: *n_objects,
+                n_hold_notes: *n_hold_notes,
+                max_combo: *max_combo,
+                is_convert: *is_convert,
+            }),
+            _ => unreachable!("invalid mode {}", attrs.mode),
         }
     }
 }
