@@ -8,6 +8,7 @@ use rosu_pp::model::beatmap::HitWindows as RosuHitWindows;
 /// - **catch (2):** `ar`
 /// - **mania (3):** `od_perfect`, `od_great`, `od_good`, `od_ok`, `od_meh`
 #[repr(C)]
+#[cheadergen::config(export)]
 pub struct HitWindows {
     /// Hit window for approach rate (AR) in milliseconds.
     /// Only available for osu! and catch.

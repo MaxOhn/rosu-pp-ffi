@@ -20,6 +20,7 @@ use rosu_pp::{
 /// **catch (mode=2):** `movement`
 /// **mania (mode=3):** `strains`
 #[repr(C)]
+#[cheadergen::config(export)]
 pub struct StrainsData {
     /// Game mode: 0=osu!, 1=taiko, 2=catch, 3=mania
     pub mode: i32,

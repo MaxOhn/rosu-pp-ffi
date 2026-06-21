@@ -25,6 +25,7 @@ use rosu_pp::{
 ///
 /// Fields `stars`, `max_combo`, `is_convert`, and `mode` are valid for all modes.
 #[repr(C)]
+#[cheadergen::config(export)]
 pub struct DifficultyAttributes {
     /// Game mode: 0=osu!, 1=taiko, 2=catch, 3=mania
     pub mode: i32,

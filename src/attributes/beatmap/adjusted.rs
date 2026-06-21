@@ -4,14 +4,15 @@ use crate::{attributes::beatmap::BeatmapAttributesHandle, error::FfiResult, hand
 
 /// Adjusted beatmap attributes with clock rate applied to AR and OD.
 #[repr(C)]
+#[cheadergen::config(export)]
 pub struct AdjustedBeatmapAttributes {
-    /// Approach rate adjusted for clock rate.
+    /// Approach rate
     pub ar: f64,
-    /// Circle size (not affected by clock rate).
+    /// Circle size
     pub cs: f32,
-    /// HP drain rate (not affected by clock rate).
+    /// HP drain rate
     pub hp: f32,
-    /// Overall difficulty adjusted for clock rate.
+    /// Overall difficulty
     pub od: f64,
 }
 

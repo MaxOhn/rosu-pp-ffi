@@ -69,15 +69,133 @@ static void check_value_types(void) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 3. Opaque types                                                      */
-/*    We verify that pointers to opaque types work in function calls.  */
-/*    Actual struct fields are not checked here since cheadergen       */
-/*    emits them as forward declarations when they are not directly    */
-/*    reachable from extern "C" functions.                             */
+/* 3. Concrete structs                                                  */
+/*    Verify that output structs have all expected fields with         */
+/*    correct types. These structs are now concrete thanks to          */
+/*    #[cheadergen::config(export)] on the Rust side.                  */
+/* ------------------------------------------------------------------ */
+
+static void check_concrete_structs(void) {
+    /* AdjustedBeatmapAttributes */
+    {
+        rosu_pp_AdjustedBeatmapAttributes adj;
+        adj.ar  = 0.0;
+        adj.cs  = 0.0f;
+        adj.hp  = 0.0f;
+        adj.od  = 0.0;
+        (void)adj;
+    }
+
+    /* HitWindows */
+    {
+        rosu_pp_HitWindows hw;
+        hw.ar              = 0.0;
+        hw.od_perfect      = 0.0;
+        hw.od_great        = 0.0;
+        hw.od_good         = 0.0;
+        hw.od_ok           = 0.0;
+        hw.od_meh          = 0.0;
+        (void)hw;
+    }
+
+    /* StrainsData */
+    {
+        rosu_pp_StrainsData sd;
+        sd.mode                    = 0;
+        sd.section_len             = 0.0;
+        sd.len                     = 0;
+        sd.aim                     = NULL;
+        sd.aim_no_sliders          = NULL;
+        sd.speed                   = NULL;
+        sd.flashlight              = NULL;
+        sd.stamina                 = NULL;
+        sd.rhythm                  = NULL;
+        sd.color                   = NULL;
+        sd.reading                 = NULL;
+        sd.single_color_stamina    = NULL;
+        sd.movement                = NULL;
+        sd.strains                 = NULL;
+        (void)sd;
+    }
+
+    /* DifficultyAttributes */
+    {
+        rosu_pp_DifficultyAttributes da;
+        da.mode                        = 0;
+        da.stars                       = 0.0;
+        da.max_combo                   = 0;
+        da.aim                         = 0.0;
+        da.speed                       = 0.0;
+        da.flashlight                  = 0.0;
+        da.stamina                     = 0.0;
+        da.rhythm                      = 0.0;
+        da.color                       = 0.0;
+        da.reading                     = 0.0;
+        da.ar                          = 0.0;
+        da.od                          = 0.0;
+        da.hp                          = 0.0;
+        da.great_hit_window            = 0.0;
+        da.ok_hit_window               = 0.0;
+        da.meh_hit_window              = 0.0;
+        da.n_circles                   = 0;
+        da.n_sliders                   = 0;
+        da.n_large_ticks               = 0;
+        da.n_spinners                  = 0;
+        da.n_objects                   = 0;
+        da.aim_difficult_slider_count  = 0.0;
+        da.slider_factor               = 0.0;
+        da.aim_top_weighted_slider_factor = 0.0;
+        da.speed_top_weighted_slider_factor = 0.0;
+        da.speed_note_count            = 0.0;
+        da.aim_difficult_strain_count  = 0.0;
+        da.speed_difficult_strain_count = 0.0;
+        da.nested_score_per_object     = 0.0;
+        da.legacy_score_base_multiplier = 0.0;
+        da.maximum_legacy_combo_score  = 0.0;
+        da.mono_stamina_factor         = 0.0;
+        da.mechanical_difficulty       = 0.0;
+        da.consistency_factor          = 0.0;
+        da.preempt                     = 0.0;
+        da.n_fruits                    = 0;
+        da.n_droplets                  = 0;
+        da.n_tiny_droplets             = 0;
+        da.n_hold_notes                = 0;
+        da.is_convert                  = 0;
+        (void)da;
+    }
+
+    /* PerformanceAttributes */
+    {
+        rosu_pp_PerformanceAttributes pa;
+        pa.pp                          = 0.0;
+        pa.pp_acc                      = 0.0;
+        pa.pp_aim                      = 0.0;
+        pa.pp_speed                    = 0.0;
+        pa.pp_flashlight               = 0.0;
+        pa.pp_difficulty               = 0.0;
+        pa.max_combo                   = 0;
+        pa.effective_miss_count        = 0.0;
+        pa.speed_deviation             = 0.0;
+        pa.combo_based_estimated_miss_count = 0.0;
+        pa.score_based_estimated_miss_count = 0.0;
+        pa.aim_estimated_slider_breaks = 0.0;
+        pa.speed_estimated_slider_breaks = 0.0;
+        pa.estimated_unstable_rate     = 0.0;
+        pa.difficulty.mode             = 0;
+        pa.difficulty.stars            = 0.0;
+        pa.difficulty.max_combo        = 0;
+        (void)pa;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* 4. Opaque types                                                      */
+/*    We verify that pointers to opaque handle types work in           */
+/*    function calls.                                                  */
 /* ------------------------------------------------------------------ */
 
 static void check_opaque_types(void) {
-    /* Verify that pointer-to-opaque types can be declared and used */
+    /* Verify that pointer-to-opaque handle types can be declared and used */
     rosu_pp_BeatmapHandle *beatmap = NULL;
     rosu_pp_DifficultyHandle *diff = NULL;
     rosu_pp_ModsHandle *mods = NULL;
@@ -87,20 +205,14 @@ static void check_opaque_types(void) {
     rosu_pp_InspectDifficultyHandle *inspect = NULL;
     rosu_pp_BeatmapAttributesHandle *battrib = NULL;
     rosu_pp_BeatmapAttributesBuilderHandle *battrib_builder = NULL;
-    rosu_pp_DifficultyAttributes *diff_attrs = NULL;
-    rosu_pp_PerformanceAttributes *perf_attrs = NULL;
-    rosu_pp_AdjustedBeatmapAttributes *adj_attrs = NULL;
-    rosu_pp_HitWindows *hit_windows = NULL;
-    rosu_pp_StrainsData *strains = NULL;
 
     (void)beatmap; (void)diff; (void)mods; (void)perf;
     (void)gdiff; (void)gperf; (void)inspect; (void)battrib;
-    (void)battrib_builder; (void)diff_attrs; (void)perf_attrs;
-    (void)adj_attrs; (void)hit_windows; (void)strains;
+    (void)battrib_builder;
 }
 
 /* ------------------------------------------------------------------ */
-/* 4. Function signatures                                               */
+/* 5. Function signatures                                               */
 /*    We declare function pointer variables matching every public       */
 /*    function's signature. A type mismatch (wrong return type,        */
 /*    wrong parameter type) will be caught here.                        */

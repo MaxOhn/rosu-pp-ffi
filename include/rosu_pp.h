@@ -45,22 +45,6 @@ typedef enum rosu_pp_GameMode {
 } rosu_pp_GameMode;
 
 /**
- * Adjusted beatmap attributes with clock rate applied to AR and OD.
- */
-typedef struct rosu_pp_AdjustedBeatmapAttributes rosu_pp_AdjustedBeatmapAttributes;
-
-/**
- * AR and OD hit windows for a beatmap.
- *
- * Fields populated depend on the game mode (otherwise `NaN`):
- * - **osu! (0):** `ar`, `od_great`, `od_ok`, `od_meh`
- * - **taiko (1):** `od_great`, `od_ok`
- * - **catch (2):** `ar`
- * - **mania (3):** `od_perfect`, `od_great`, `od_good`, `od_ok`, `od_meh`
- */
-typedef struct rosu_pp_HitWindows rosu_pp_HitWindows;
-
-/**
  * Opaque handle to an inspected difficulty calculator.
  *
  * Created via `rosu_pp_difficulty_inspect`. Use getter functions to inspect
@@ -87,15 +71,6 @@ typedef struct rosu_pp_BeatmapAttributesHandle rosu_pp_BeatmapAttributesHandle;
  * **Must be freed** with `rosu_pp_beatmap_attrs_builder_free` when done.
  */
 typedef struct rosu_pp_BeatmapAttributesBuilderHandle rosu_pp_BeatmapAttributesBuilderHandle;
-
-/**
- * Unified performance attributes for all osu! game modes.
- *
- * Contains the total pp and breakdown by category, along with the underlying
- * difficulty attributes. Inspect `difficulty.mode` to determine which fields
- * are valid.
- */
-typedef struct rosu_pp_PerformanceAttributes rosu_pp_PerformanceAttributes;
 
 /**
  * Opaque handle to a loaded osu! beatmap.
@@ -162,6 +137,65 @@ typedef struct rosu_pp_PerformanceHandle rosu_pp_PerformanceHandle;
 typedef struct rosu_pp_DifficultyHandle rosu_pp_DifficultyHandle;
 
 /**
+ * Adjusted beatmap attributes with clock rate applied to AR and OD.
+ */
+typedef struct rosu_pp_AdjustedBeatmapAttributes {
+  /**
+   * Approach rate
+   */
+  double ar;
+  /**
+   * Circle size
+   */
+  float cs;
+  /**
+   * HP drain rate
+   */
+  float hp;
+  /**
+   * Overall difficulty
+   */
+  double od;
+} rosu_pp_AdjustedBeatmapAttributes;
+
+/**
+ * AR and OD hit windows for a beatmap.
+ *
+ * Fields populated depend on the game mode (otherwise `NaN`):
+ * - **osu! (0):** `ar`, `od_great`, `od_ok`, `od_meh`
+ * - **taiko (1):** `od_great`, `od_ok`
+ * - **catch (2):** `ar`
+ * - **mania (3):** `od_perfect`, `od_great`, `od_good`, `od_ok`, `od_meh`
+ */
+typedef struct rosu_pp_HitWindows {
+  /**
+   * Hit window for approach rate (AR) in milliseconds.
+   * Only available for osu! and catch.
+   */
+  double ar;
+  /**
+   * Perfect hit window (mania only).
+   */
+  double od_perfect;
+  /**
+   * Great hit window for OD (osu!, taiko, mania).
+   */
+  double od_great;
+  /**
+   * Good hit window (mania only).
+   */
+  double od_good;
+  /**
+   * Ok hit window for OD (osu!, taiko, mania).
+   */
+  double od_ok;
+  /**
+   * Meh hit window (osu!, mania only).
+   */
+  double od_meh;
+} rosu_pp_HitWindows;
+
+/**
  * The result of calculating the strains on a map.
  *
  * Suitable to plot the difficulty of a map over time. The `mode` field
@@ -173,31 +207,64 @@ typedef struct rosu_pp_DifficultyHandle rosu_pp_DifficultyHandle;
  * **catch (mode=2):** `movement`
  * **mania (mode=3):** `strains`
  */
-typedef struct rosu_pp_StrainsData rosu_pp_StrainsData;
-
-/**
- * Unified difficulty attributes for all osu! game modes.
- *
- * After a difficulty calculation, inspect the `mode` field to determine which
- * attributes are valid:
- *
- * - **`0` (osu!):** `aim`, `speed`, `flashlight`, `ar`, `od`, `hp`,
- *   `great_hit_window`, `ok_hit_window`, `meh_hit_window`, `n_circles`,
- *   `n_sliders`, `n_large_ticks`, `n_spinners`, `aim_difficult_slider_count`,
- *   `slider_factor`, `aim_top_weighted_slider_factor`, `speed_top_weighted_slider_factor`,
- *   `speed_note_count`, `aim_difficult_strain_count`, `speed_difficult_strain_count`,
- *   `nested_score_per_object`, `legacy_score_base_multiplier`, `maximum_legacy_combo_score`
- *
- * - **`1` (taiko):** `stamina`, `rhythm`, `color`, `reading`,
- *   `mono_stamina_factor`, `mechanical_difficulty`, `consistency_factor`
- *
- * - **`2` (catch):** `preempt`, `n_fruits`, `n_droplets`, `n_tiny_droplets`
- *
- * - **`3` (mania):** `n_hold_notes`
- *
- * Fields `stars`, `max_combo`, `is_convert`, and `mode` are valid for all modes.
- */
-typedef struct rosu_pp_DifficultyAttributes rosu_pp_DifficultyAttributes;
+typedef struct rosu_pp_StrainsData {
+  /**
+   * Game mode: 0=osu!, 1=taiko, 2=catch, 3=mania
+   */
+  int32_t mode;
+  /**
+   * Time between two strain values in milliseconds (valid for all modes)
+   */
+  double section_len;
+  /**
+   * Number of strain values in each array
+   */
+  uintptr_t len;
+  /**
+   * Aim strain peaks (osu! only)
+   */
+  const double *aim;
+  /**
+   * Aim strain peaks without sliders (osu! only)
+   */
+  const double *aim_no_sliders;
+  /**
+   * Speed strain peaks (osu! only)
+   */
+  const double *speed;
+  /**
+   * Flashlight strain peaks (osu! only)
+   */
+  const double *flashlight;
+  /**
+   * Stamina strain peaks (taiko only)
+   */
+  const double *stamina;
+  /**
+   * Rhythm strain peaks (taiko only)
+   */
+  const double *rhythm;
+  /**
+   * Color strain peaks (taiko only)
+   */
+  const double *color;
+  /**
+   * Reading strain peaks (taiko only)
+   */
+  const double *reading;
+  /**
+   * Single color stamina strain peaks (taiko only)
+   */
+  const double *single_color_stamina;
+  /**
+   * Movement strain peaks (catch only)
+   */
+  const double *movement;
+  /**
+   * Strain peaks (mania only)
+   */
+  const double *strains;
+} rosu_pp_StrainsData;
 
 /**
  * Hit result counts and score composition for a single play.
@@ -266,6 +333,261 @@ typedef struct rosu_pp_ScoreState {
    */
   bool legacy_total_score_valid;
 } rosu_pp_ScoreState;
+
+/**
+ * Unified difficulty attributes for all osu! game modes.
+ *
+ * After a difficulty calculation, inspect the `mode` field to determine which
+ * attributes are valid:
+ *
+ * - **`0` (osu!):** `aim`, `speed`, `flashlight`, `ar`, `od`, `hp`,
+ *   `great_hit_window`, `ok_hit_window`, `meh_hit_window`, `n_circles`,
+ *   `n_sliders`, `n_large_ticks`, `n_spinners`, `aim_difficult_slider_count`,
+ *   `slider_factor`, `aim_top_weighted_slider_factor`, `speed_top_weighted_slider_factor`,
+ *   `speed_note_count`, `aim_difficult_strain_count`, `speed_difficult_strain_count`,
+ *   `nested_score_per_object`, `legacy_score_base_multiplier`, `maximum_legacy_combo_score`
+ *
+ * - **`1` (taiko):** `stamina`, `rhythm`, `color`, `reading`,
+ *   `mono_stamina_factor`, `mechanical_difficulty`, `consistency_factor`
+ *
+ * - **`2` (catch):** `preempt`, `n_fruits`, `n_droplets`, `n_tiny_droplets`
+ *
+ * - **`3` (mania):** `n_hold_notes`
+ *
+ * Fields `stars`, `max_combo`, `is_convert`, and `mode` are valid for all modes.
+ */
+typedef struct rosu_pp_DifficultyAttributes {
+  /**
+   * Game mode: 0=osu!, 1=taiko, 2=catch, 3=mania
+   */
+  int32_t mode;
+  /**
+   * Star rating (valid for all modes)
+   */
+  double stars;
+  /**
+   * Maximum combo (valid for all modes)
+   */
+  uint32_t max_combo;
+  /**
+   * Aim difficulty (osu! only)
+   */
+  double aim;
+  /**
+   * Speed difficulty (osu! only)
+   */
+  double speed;
+  /**
+   * Flashlight difficulty (osu! only)
+   */
+  double flashlight;
+  /**
+   * Stamina difficulty (taiko only)
+   */
+  double stamina;
+  /**
+   * Rhythm difficulty (taiko only)
+   */
+  double rhythm;
+  /**
+   * Color difficulty (taiko only)
+   */
+  double color;
+  /**
+   * Reading difficulty (taiko only)
+   */
+  double reading;
+  /**
+   * Approach Rate (osu! only)
+   */
+  double ar;
+  /**
+   * Overall Difficulty (osu! only)
+   */
+  double od;
+  /**
+   * HP Drain rate (osu! only)
+   */
+  double hp;
+  /**
+   * Great hit window in milliseconds (osu! / taiko)
+   */
+  double great_hit_window;
+  /**
+   * OK hit window in milliseconds (osu! / taiko)
+   */
+  double ok_hit_window;
+  /**
+   * Meh hit window in milliseconds (osu! only)
+   */
+  double meh_hit_window;
+  /**
+   * Number of circles (osu! only)
+   */
+  uint32_t n_circles;
+  /**
+   * Number of sliders (osu! only)
+   */
+  uint32_t n_sliders;
+  /**
+   * Number of large ticks / whistle hits (osu! only)
+   */
+  uint32_t n_large_ticks;
+  /**
+   * Number of spinners (osu! only)
+   */
+  uint32_t n_spinners;
+  /**
+   * Number of hit objects (mania only)
+   */
+  uint32_t n_objects;
+  /**
+   * Number of difficult aim slider strains (osu! only)
+   */
+  double aim_difficult_slider_count;
+  /**
+   * Slider factor (osu! only)
+   */
+  double slider_factor;
+  /**
+   * Top-weighted aim slider factor (osu! only)
+   */
+  double aim_top_weighted_slider_factor;
+  /**
+   * Top-weighted speed slider factor (osu! only)
+   */
+  double speed_top_weighted_slider_factor;
+  /**
+   * Speed note count (osu! only)
+   */
+  double speed_note_count;
+  /**
+   * Difficult aim strain count (osu! only)
+   */
+  double aim_difficult_strain_count;
+  /**
+   * Difficult speed strain count (osu! only)
+   */
+  double speed_difficult_strain_count;
+  /**
+   * Nested score per object (osu! only)
+   */
+  double nested_score_per_object;
+  /**
+   * Legacy score base multiplier (osu! only)
+   */
+  double legacy_score_base_multiplier;
+  /**
+   * Maximum legacy combo score (osu! only)
+   */
+  double maximum_legacy_combo_score;
+  /**
+   * Mono-stamina factor (taiko only)
+   */
+  double mono_stamina_factor;
+  /**
+   * Mechanical difficulty (taiko only)
+   */
+  double mechanical_difficulty;
+  /**
+   * Consistency factor (taiko only)
+   */
+  double consistency_factor;
+  /**
+   * Preempt value (catch only)
+   */
+  double preempt;
+  /**
+   * Number of fruits (catch only)
+   */
+  uint32_t n_fruits;
+  /**
+   * Number of droplets (catch only)
+   */
+  uint32_t n_droplets;
+  /**
+   * Number of tiny droplets (catch only)
+   */
+  uint32_t n_tiny_droplets;
+  /**
+   * Number of hold notes (mania only)
+   */
+  uint32_t n_hold_notes;
+  /**
+   * Whether this is a converted map
+   */
+  bool is_convert;
+} rosu_pp_DifficultyAttributes;
+
+/**
+ * Unified performance attributes for all osu! game modes.
+ *
+ * Contains the total pp and breakdown by category, along with the underlying
+ * difficulty attributes. Inspect `difficulty.mode` to determine which fields
+ * are valid.
+ */
+typedef struct rosu_pp_PerformanceAttributes {
+  /**
+   * Total performance points
+   */
+  double pp;
+  /**
+   * Performance points from accuracy
+   */
+  double pp_acc;
+  /**
+   * Performance points from aim
+   */
+  double pp_aim;
+  /**
+   * Performance points from speed
+   */
+  double pp_speed;
+  /**
+   * Performance points from flashlight (osu! only)
+   */
+  double pp_flashlight;
+  /**
+   * Performance points from difficulty (taiko / mania)
+   */
+  double pp_difficulty;
+  /**
+   * Maximum combo
+   */
+  uint32_t max_combo;
+  /**
+   * Effective miss count (osu! only)
+   */
+  double effective_miss_count;
+  /**
+   * Speed deviation (osu! only)
+   */
+  double speed_deviation;
+  /**
+   * Combo-based estimated miss count (osu! only)
+   */
+  double combo_based_estimated_miss_count;
+  /**
+   * Score-based estimated miss count (osu! only)
+   */
+  double score_based_estimated_miss_count;
+  /**
+   * Estimated slider breaks for aim (osu! only)
+   */
+  double aim_estimated_slider_breaks;
+  /**
+   * Estimated slider breaks for speed (osu! only)
+   */
+  double speed_estimated_slider_breaks;
+  /**
+   * Estimated unstable rate (taiko only)
+   */
+  double estimated_unstable_rate;
+  /**
+   * Underlying difficulty attributes (mode-dependent)
+   */
+  struct rosu_pp_DifficultyAttributes difficulty;
+} rosu_pp_PerformanceAttributes;
 
 /**
  * Get the approach rate from the beatmap attributes.

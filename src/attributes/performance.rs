@@ -12,6 +12,7 @@ use crate::attributes::difficulty::DifficultyAttributes;
 /// difficulty attributes. Inspect `difficulty.mode` to determine which fields
 /// are valid.
 #[repr(C)]
+#[cheadergen::config(export)]
 pub struct PerformanceAttributes {
     /// Total performance points
     pub pp: f64,
